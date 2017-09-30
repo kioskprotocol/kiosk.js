@@ -1,0 +1,26 @@
+{
+  "name": "kioskjs",
+  "version": "0.0.1",
+  "description": "Javascript library to interact with Kiosk protocol smart contracts",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "author": "Rich McAteer <rich@kioskprotocol.com> (http://www.kioskprotocol.com/)",
+  "license": "Apache 2.0",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "bluebird": "^3.5.0",
+    "web3": "^0.20.0"
+  },
+  "devDependencies": {
+    "async": "^2.5.0",
+    "chai": "^4.1.2",
+    "ethereumjs-testrpc": "^4.1.3",
+    "fs": "0.0.1-security",
+    "mocha": "^3.5.3",
+    "solc": "^0.4.17"
+  }
+}
