@@ -14,6 +14,7 @@ describe("Kiosk", function() {
     var web3;
     var kioskClient;
     var alice;
+    var bob;
     var genesisDIN = 1000000000;
 
     before(function(done) {
@@ -23,6 +24,7 @@ describe("Kiosk", function() {
 
         web3.eth.getAccounts(function(err, accounts) {
             alice = accounts[0];
+            bob = accounts[1];
             var source = fs.readFileSync("test/DINRegistry.sol").toString();
             var compiled = solc.compile(source, 1);
             var deployer = compiled.contracts[":DINRegistry"];
@@ -48,11 +50,69 @@ describe("Kiosk", function() {
         });
     });
 
-    describe('#owner()', function() {
+    describe("#owner()", function() {
         it("should return the correct owner of a DIN", function(done) {
-            kioskClient.owner(1000000000).then(function(result) {
-                assert.equal(result, alice);
-            }).catch(assert.isError).finally(done);
+            kioskClient
+                .owner(genesisDIN)
+                .then(function(result) {
+                    assert.equal(result, alice);
+                })
+                .catch(assert.isError)
+                .finally(done);
+        });
+    });
+
+    describe("#resolver()", function() {
+        it("should return the correct resolver of a DIN", function(done) {
+            kioskClient
+                .resolver(genesisDIN)
+                .then(function(result) {
+                    assert.equal(
+                        result,
+                        "0x0000000000000000000000000000000000000000"
+                    );
+                })
+                .catch(assert.isError)
+                .finally(done);
+        });
+    });
+
+    describe("#setOwner()", function() {
+        it("should set the owner of a DIN", function(done) {
+            kioskClient
+                .setOwner(genesisDIN, bob, { from: alice })
+                .then(function(result) {
+                    kioskClient
+                        .owner(genesisDIN)
+                        .then(function(result) {
+                            assert.equal(result, bob);
+                        })
+                        .catch(assert.isError)
+                        .finally(done);
+                });
+        });
+    });
+
+    describe("#setResolver()", function() {
+        it("should set the resolver of a DIN", function(done) {
+            kioskClient
+                .setResolver(
+                    genesisDIN,
+                    "0x1111111111111111111111111111111111111111",
+                    { from: bob }
+                )
+                .then(function(result) {
+                    kioskClient
+                        .resolver(genesisDIN)
+                        .then(function(result) {
+                            assert.equal(
+                                result,
+                                "0x1111111111111111111111111111111111111111"
+                            );
+                        })
+                        .catch(assert.isError)
+                        .finally(done);
+                });
         });
     });
 
