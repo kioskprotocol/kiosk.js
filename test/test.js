@@ -145,11 +145,10 @@ describe("Kiosk", function() {
             kioskClient
                 .productURL(1000000000)
                 .then(function(result) {
-                    console.log(result)
-                    // assert.equal(result, "https://www.google.com");
+                    assert.equal(result, "https://www.google.com/");
                 })
-                // .catch(assert.isError)
-                // .finally(done);
+                .catch(assert.isError)
+                .finally(done);
         });
     });
 });

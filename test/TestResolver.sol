@@ -9,7 +9,7 @@ contract TestResolver {
     }
 
     function productURL(uint256 DIN) public constant returns (string) {
-        return "http://google.com/";
+        return "https://www.google.com/";
     }
 
 }
