@@ -13,32 +13,24 @@ function Kiosk(web3, registry) {
 
     if (registry) {
         this.registryAsync = Promise.resolve(Promise.promisifyAll(registry));
-        // this.registrarAsync = Promise.resolve(Promise.promisifyAll(registrar));
     } else {
-        this.web3 = new Web3(
-            new Web3.providers.HttpProvider(
-                "https://kovan.infura.io/MswqGvkxMnwzGebFcH6N"
-            )
-        );
-        this.web3.version.getNetwork(function(err, result) {
-            var registryAddress;
+        const network = web3.version.network;
 
-            switch (result) {
-                case "1": // Main Network
-                    registryAddress = registryAddressMainNet;
-                    break;
-                case "42": // Kovan
-                    registryAddress = registryAddressKovan;
-                    break;
-                default:
-                    break;
-            }
+        var registryAddress;
 
-            const registry = web3.eth.contract(registryABI).at(registryAddress);
-            this.registryAsync = Promise.resolve(
-                Promise.promisifyAll(registry)
-            );
-        });
+        switch (network) {
+            case "1": // Main Network
+                registryAddress = registryAddressMainNet;
+                break;
+            case "42": // Kovan
+                registryAddress = registryAddressKovan;
+                break;
+            default:
+                break;
+        }
+
+        const registry = web3.eth.contract(registryABI).at(registryAddress);
+        this.registryAsync = Promise.resolve(Promise.promisifyAll(registry));
     }
 }
 
@@ -69,11 +61,15 @@ Kiosk.prototype.setResolver = function(DIN, resolver, params) {
 Kiosk.prototype.productURL = function(DIN) {
     var web3 = this.web3;
     return this.resolver(DIN).then(function(resolverAddr) {
-        var resolverContract = web3.eth.contract(resolverABI).at(resolverAddr)
-        var resolverAsync = Promise.resolve(Promise.promisifyAll(resolverContract));
-        return resolverAsync.then(function(resolver) {
-            return resolver.productURLAsync(DIN);
-        });
+        if (resolverAddr !== "0x0000000000000000000000000000000000000000") {
+            var resolverContract = web3.eth.contract(resolverABI).at(resolverAddr);
+            var resolverAsync = Promise.resolve(Promise.promisifyAll(resolverContract));
+            return resolverAsync.then(function(resolver) {
+                return resolver.productURLAsync(DIN);
+            });
+        } else {
+            return "";
+        }
     });
 };
 
