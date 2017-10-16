@@ -1,160 +1,99 @@
-const kiosk = require("../index.js");
-const testrpc = require("ethereumjs-testrpc");
-const Web3 = require("web3");
-const assert = require("assert");
-const async = require("async");
-const fs = require("fs");
-var solc = require("solc");
+const DINRegistrar = artifacts.require("DINRegistrar.sol");
+const DINRegistry = artifacts.require("DINRegistry.sol");
+const Buy = artifacts.require("Buy.sol");
+const MarketToken = artifacts.require("marketToken.sol");
+const TestResolver = artifacts.require("TestResolver.sol");
+
+var Kiosk = require("../index.js");
+var util = require("ethereumjs-util");
+var ABI = require("ethereumjs-abi");
+var assert = require("assert");
+var BN = require("bn.js");
 var Promise = require("bluebird");
 var chai = require("chai"),
     expect = chai.expect,
     should = chai.should();
 
-describe("Kiosk", function() {
-    var web3;
-    var kioskClient;
-    var alice;
-    var bob;
-    var genesisDIN = 1000000000;
-    var resolverAddress;
+contract("Kiosk", accounts => {
+    let kiosk;
 
-    before(function(done) {
-        this.timeout(20000);
-        web3 = new Web3();
-        web3.setProvider(testrpc.provider());
+    // Contracts
+    let registry;
+    let registrar;
+    let resolver;
+    let buy;
+    let marketToken;
 
-        web3.eth.getAccounts(function(err, accounts) {
-            alice = accounts[0];
-            bob = accounts[1];
-            var source = fs.readFileSync("test/DINRegistry.sol").toString();
-            var compiled = solc.compile(source, 1);
-            var deployer = compiled.contracts[":DINRegistry"];
-            var registryContract = web3.eth.contract(
-                JSON.parse(deployer.interface)
-            );
+    // Accounts
+    const alice = accounts[0];
+    const bob = accounts[1];
 
-            kioskClient = new kiosk(web3);
-            done();
+    // Product
+    const DIN = 1000000001;
+    const price = 8000000;
+    const priceValidUntil  = new Date().getTime() + 100000;
+    let signature = {};
 
-            // Deploy the contract
-            // registryContract.new(
-            //     genesisDIN,
-            //     {
-            //         from: alice,
-            //         data: deployer.bytecode,
-            //         gas: 4700000
-            //     },
-            //     function(err, registry) {
-            //         if (registry.address != undefined) {
-            //             kioskClient = new kiosk(web3);
-            //             var resolverSource = fs
-            //                 .readFileSync("test/TestResolver.sol")
-            //                 .toString();
-            //             var resolverCompiled = solc.compile(resolverSource, 1);
-            //             var resolverDeployer =
-            //                 resolverCompiled.contracts[":TestResolver"];
-            //             var resolverContract = web3.eth.contract(
-            //                 JSON.parse(deployer.interface)
-            //             );
-            //             resolverContract.new(
-            //                 {
-            //                     from: alice,
-            //                     data: resolverDeployer.bytecode,
-            //                     gas: 4700000
-            //                 },
-            //                 function(error, resolver) {
-            //                     if (resolver.address != undefined) {
-            //                         resolverAddress = resolver.address;
-            //                         kioskClient.setResolver(
-            //                             genesisDIN,
-            //                             resolver.address,
-            //                             { from: alice }
-            //                         );
-            //                         done();
-            //                     }
-            //                 }
-            //             );
-            //         }
-            //     }
-            // );
-        });
+    before(async () => {
+        registry = await DINRegistry.deployed();
+        registrar = await DINRegistrar.deployed();
+        resolver = await TestResolver.deployed();
+        buy = await Buy.deployed();
+        marketToken = await MarketToken.deployed();
+
+        kiosk = new Kiosk(web3, registry, buy);
+
+        // Register a new DIN and set its resolver
+        await registrar.registerDIN({ from: alice });
+        await registry.setResolver(DIN, resolver.address);
+
+        // Transfer some MARKs to Bob so he can buy the product
+        await marketToken.transfer(bob, price, { from: alice });
+
+        // Alice signs message to sell product for 5 MARKs
+        const args = [DIN, price, priceValidUntil];
+        const argTypes = ["uint256", "uint256", "uint256"];
+        const msg = ABI.soliditySHA3(argTypes, args);
+        const result = await web3.eth.sign(alice, util.bufferToHex(msg));
+        signature = util.fromRpcSig(result);
     });
 
-    describe("#owner()", function() {
-        it("should return the correct owner of a DIN", function(done) {
-            kioskClient
-                .owner(genesisDIN)
-                .then(function(result) {
-                    console.log(result);
-                    // assert.equal(result, alice);
-                })
-                .catch(assert.isError)
-                .finally(done);
-        });
+    it("should return the correct owner of a DIN", async () => {
+        const owner = await kiosk.owner(DIN);
+        expect(owner).to.equal(alice);
     });
 
-    describe("#resolver()", function() {
-        it("should return the correct resolver of a DIN", function(done) {
-            kioskClient
-                .resolver(genesisDIN)
-                .then(function(result) {
-                    console.log(result);
-                    // assert.equal(result, resolverAddress);
-                })
-                .catch(assert.isError)
-                .finally(done);
-        });
+    it("should return the correct resolver of a DIN", async () => {
+        const resolverAddr = await kiosk.resolver(DIN);
+        expect(resolverAddr).to.equal(resolver.address);
     });
 
-    // describe("#setOwner()", function() {
-    //     it("should set the owner of a DIN", function(done) {
-    //         kioskClient
-    //             .setOwner(genesisDIN, bob, { from: alice })
-    //             .then(function(result) {
-    //                 kioskClient
-    //                     .owner(genesisDIN)
-    //                     .then(function(result) {
-    //                         assert.equal(result, bob);
-    //                     })
-    //                     .catch(assert.isError)
-    //                     .finally(done);
-    //             });
-    //     });
-    // });
-
-    // describe("#setResolver()", function() {
-    //     it("should set the resolver of a DIN", function(done) {
-    //         kioskClient
-    //             .setResolver(
-    //                 genesisDIN,
-    //                 "0x1111111111111111111111111111111111111111",
-    //                 { from: bob }
-    //             )
-    //             .then(function(result) {
-    //                 kioskClient
-    //                     .resolver(genesisDIN)
-    //                     .then(function(result) {
-    //                         assert.equal(
-    //                             result,
-    //                             "0x1111111111111111111111111111111111111111"
-    //                         );
-    //                     })
-    //                     .catch(assert.isError)
-    //                     .finally(done);
-    //             });
-    //     });
-    // });
-
-    describe("#productURL()", function() {
-        it("should get the product URL for a given DIN", function(done) {
-            kioskClient
-                .productURL(1000000000)
-                .then(function(result) {
-                    console.log(result);
-                    // assert.equal(result, "https://www.google.com/");
-                })
-                .catch(assert.isError)
-                .finally(done);
-        });
+    it("should set the owner of a DIN", async () => {
+        await kiosk.setOwner(DIN, bob, { from: alice });
+        const owner = await kiosk.owner(DIN);
+        expect(owner).to.equal(bob);
+        await kiosk.setOwner(DIN, alice, { from: bob }); // Reset
     });
+
+    it("should set the resolver of a DIN", async () => {
+        await kiosk.setResolver(DIN, "0x1111111111111111111111111111111111111111", { from: alice })
+        const resolverAddr = await kiosk.resolver(DIN);
+        expect(resolverAddr).to.equal("0x1111111111111111111111111111111111111111");
+        await kiosk.setResolver(DIN, resolver.address); // Reset
+    });
+
+    it("should get the product URL for a given DIN", async () => {
+        const url = await kiosk.productURL(DIN);
+        expect(url).to.equal("https://www.google.com/");
+    });
+
+    it("should buy a product", async () => {
+        var { v, r, s } = signature;
+        const balance = await marketToken.balanceOf(bob);
+        expect(balance.toNumber()).to.equal(price);
+        const result = await kiosk.buyProduct(DIN, 1, price, priceValidUntil, v, util.bufferToHex(r), util.bufferToHex(s), { from: bob });
+        const newBalance = await marketToken.balanceOf(bob);
+        expect(newBalance.toNumber()).to.equal(0);
+    });
+
 });
