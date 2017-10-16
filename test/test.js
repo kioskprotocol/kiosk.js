@@ -14,7 +14,7 @@ var chai = require("chai"),
     expect = chai.expect,
     should = chai.should();
 
-contract("Kiosk", accounts => {
+contract("testrpc", accounts => {
     let kiosk;
 
     // Contracts
@@ -31,7 +31,7 @@ contract("Kiosk", accounts => {
     // Product
     const DIN = 1000000001;
     const price = 8000000;
-    const priceValidUntil  = new Date().getTime() + 100000;
+    const priceValidUntil = new Date().getTime() + 100000;
     let signature = {};
 
     before(async () => {
@@ -40,6 +40,10 @@ contract("Kiosk", accounts => {
         resolver = await TestResolver.deployed();
         buy = await Buy.deployed();
         marketToken = await MarketToken.deployed();
+
+        web3.setProvider(
+            new web3.providers.HttpProvider("http://localhost:8545")
+        );
 
         kiosk = new Kiosk(web3, registry, buy);
 
@@ -76,9 +80,15 @@ contract("Kiosk", accounts => {
     });
 
     it("should set the resolver of a DIN", async () => {
-        await kiosk.setResolver(DIN, "0x1111111111111111111111111111111111111111", { from: alice })
+        await kiosk.setResolver(
+            DIN,
+            "0x1111111111111111111111111111111111111111",
+            { from: alice }
+        );
         const resolverAddr = await kiosk.resolver(DIN);
-        expect(resolverAddr).to.equal("0x1111111111111111111111111111111111111111");
+        expect(resolverAddr).to.equal(
+            "0x1111111111111111111111111111111111111111"
+        );
         await kiosk.setResolver(DIN, resolver.address); // Reset
     });
 
@@ -91,9 +101,17 @@ contract("Kiosk", accounts => {
         var { v, r, s } = signature;
         const balance = await marketToken.balanceOf(bob);
         expect(balance.toNumber()).to.equal(price);
-        const result = await kiosk.buyProduct(DIN, 1, price, priceValidUntil, v, util.bufferToHex(r), util.bufferToHex(s), { from: bob });
+        const result = await kiosk.buyProduct(
+            DIN,
+            1,
+            price,
+            priceValidUntil,
+            v,
+            util.bufferToHex(r),
+            util.bufferToHex(s),
+            { from: bob }
+        );
         const newBalance = await marketToken.balanceOf(bob);
         expect(newBalance.toNumber()).to.equal(0);
     });
-
 });
