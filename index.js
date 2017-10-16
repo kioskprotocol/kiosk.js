@@ -7,14 +7,12 @@ function Kiosk(web3, registry, buy) {
     this.web3 = web3;
 
     if (registry && buy) {
-        this.registry = Promise.resolve(Promise.promisifyAll(registry));
-        this.buy = Promise.resolve(Promise.promisifyAll(buy));
+        this.registry = registry;
+        this.buy = buy;
     } else {
         // const network = web3.version.network;
-
         // var registryAddress;
         // var buyAddress;
-
         // switch (network) {
         //     case "1": // Main Network
         //         registryAddress = contracts.registryAddressMainNet;
@@ -26,37 +24,27 @@ function Kiosk(web3, registry, buy) {
         //     default:
         //         break;
         // }
-
         // const registry = web3.eth.contract(contracts.registryABI).at(contracts.registryAddress);
         // this.registryAsync = Promise.resolve(Promise.promisifyAll(registry));
-
         // const buy = web3.eth.contract(contracts.buyABI).at(contracts.buyAddress);
         // this.buyAsync = Promise.resolve(Promise.promisifyAll(buy));
     }
 }
 
 Kiosk.prototype.owner = function(DIN) {
-    return this.registry.then(function(registry) {
-        return registry.ownerAsync(DIN);
-    });
+    return this.registry.owner(DIN);
 };
 
 Kiosk.prototype.resolver = function(DIN) {
-    return this.registry.then(function(registry) {
-        return registry.resolverAsync(DIN);
-    });
+    return this.registry.resolver(DIN);
 };
 
 Kiosk.prototype.setOwner = function(DIN, owner, params) {
-    return this.registry.then(function(registry) {
-        return registry.setOwnerAsync(DIN, owner, params);
-    });
+    return this.registry.setOwner(DIN, owner, params);
 };
 
 Kiosk.prototype.setResolver = function(DIN, resolver, params) {
-    return this.registry.then(function(registry) {
-        return registry.setResolverAsync(DIN, resolver, params);
-    });
+    return this.registry.setResolver(DIN, resolver, params);
 };
 
 Kiosk.prototype.productURL = function(DIN) {
@@ -78,26 +66,17 @@ Kiosk.prototype.productURL = function(DIN) {
     });
 };
 
-Kiosk.prototype.buy = function(
+Kiosk.prototype.buyProduct = function(
     DIN,
     quantity,
     totalValue,
     priceValidUntil,
     v,
     r,
-    s
+    s,
+    params
 ) {
-    return this.buyAsync.then(function(buy) {
-        return buy.buyAsync(
-            DIN,
-            quantity,
-            totalValue,
-            priceValidUntil,
-            v,
-            r,
-            s
-        );
-    });
+    return this.buy.buy(DIN, quantity, totalValue, priceValidUntil, v, r, s, params);
 };
 
 module.exports = Kiosk;
