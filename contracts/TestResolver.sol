@@ -1,3 +1,5 @@
+pragma solidity ^0.4.11;
+
 /** @title Resolver contract that specifies an API endpoint where product information can be retrieved */
 contract TestResolver {
     bytes4 constant INTERFACE_META_ID = 0x01ffc9a7;         // bytes4(sha3("supportsInterface(bytes4)"))
