@@ -3,12 +3,12 @@ var Web3 = require("web3");
 var Contracts = require("./contracts.js");
 var contracts = new Contracts();
 
-// Registry is optional
-function Kiosk(web3, registry) {
+function Kiosk(web3, registry, buy) {
     this.web3 = web3;
 
-    if (registry) {
-        this.registryAsync = Promise.resolve(Promise.promisifyAll(registry));
+    if (registry && buy) {
+        this.registry = Promise.resolve(Promise.promisifyAll(registry));
+        this.buy = Promise.resolve(Promise.promisifyAll(buy));
     } else {
         // const network = web3.version.network;
 
@@ -36,25 +36,25 @@ function Kiosk(web3, registry) {
 }
 
 Kiosk.prototype.owner = function(DIN) {
-    return this.registryAsync.then(function(registry) {
+    return this.registry.then(function(registry) {
         return registry.ownerAsync(DIN);
     });
 };
 
 Kiosk.prototype.resolver = function(DIN) {
-    return this.registryAsync.then(function(registry) {
+    return this.registry.then(function(registry) {
         return registry.resolverAsync(DIN);
     });
 };
 
 Kiosk.prototype.setOwner = function(DIN, owner, params) {
-    return this.registryAsync.then(function(registry) {
+    return this.registry.then(function(registry) {
         return registry.setOwnerAsync(DIN, owner, params);
     });
 };
 
 Kiosk.prototype.setResolver = function(DIN, resolver, params) {
-    return this.registryAsync.then(function(registry) {
+    return this.registry.then(function(registry) {
         return registry.setResolverAsync(DIN, resolver, params);
     });
 };

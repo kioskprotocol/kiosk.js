@@ -23,6 +23,7 @@
     "ethereumjs-util": "^5.1.2",
     "fs": "0.0.1-security",
     "mocha": "^3.5.3",
+    "request": "^2.83.0",
     "solc": "^0.4.17"
   }
 }

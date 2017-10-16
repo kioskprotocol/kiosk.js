@@ -1,116 +1,72 @@
 var kiosk = require("../index.js");
+var deployer = require("../deployer.js");
 var Web3 = require("web3");
 var testrpc = require("ethereumjs-testrpc");
 var util = require("ethereumjs-util");
 var ABI = require("ethereumjs-abi");
 var assert = require("assert");
 var BN = require("bn.js");
-var fs = require("fs");
-var solc = require("solc");
 var Promise = require("bluebird");
 var chai = require("chai"),
     expect = chai.expect,
     should = chai.should();
 
+//     if (resolver.address != undefined) {
+//     resolverAddress = resolver.address;
+//     kioskClient.setResolver(genesisDIN, resolver.address, {
+//         from: alice
+//     });
+//     done();
+// }
+
 describe("Kiosk", function() {
     var web3;
     var kioskClient;
+    var registry;
     var alice;
     var bob;
     var genesisDIN = 1000000000;
     var resolverAddress;
     var signature = {};
+    var price;
+    var priceValidUntil;
 
     before(function(done) {
-        this.timeout(20000);
+        this.timeout(10000);
 
         web3 = new Web3();
         web3.setProvider(testrpc.provider());
 
-        function resolverCallback() {
-            done();
-        }
-
         web3.eth.getAccounts(function(err, accounts) {
             alice = accounts[0];
             bob = accounts[1];
-            var source = fs.readFileSync("test/DINRegistry.sol").toString();
-            var compiled = solc.compile(source, 1);
-            var registryDeployer = compiled.contracts[":DINRegistry"];
-            var registryContract = web3.eth.contract(
-                JSON.parse(registryDeployer.interface)
-            );
 
-            // Deploy the contract
-            registryContract.new(
-                genesisDIN,
-                {
-                    from: alice,
-                    data: registryDeployer.bytecode,
-                    gas: 4700000
-                },
-                function(err, registry) {
-                    if (registry.address != undefined) {
-                        kioskClient = new kiosk(web3, registry);
-                        sign(web3);
-                        // deployResolver(web3, resolverCallback);
-                    }
-                }
-            );
+            deployer.deployer("Buy");
+
+            // deployer.deployContracts(web3, function() {
+                // kioskClient = new kiosk(web3, deployer.registry, deployer.buy);
+            // });
         });
     });
 
-    function deployResolver(web3, callback) {
-        var resolverSource = fs
-            .readFileSync("test/TestResolver.sol")
-            .toString();
-        var resolverCompiled = solc.compile(resolverSource, 1);
-        var resolverDeployer = resolverCompiled.contracts[":TestResolver"];
-        var resolverContract = web3.eth.contract(
-            JSON.parse(resolverDeployer.interface)
-        );
-        resolverContract.new(
-            {
-                from: alice,
-                data: resolverDeployer.bytecode,
-                gas: 4700000
-            },
-            function(error, resolver) {
-                if (resolver.address != undefined) {
-                    resolverAddress = resolver.address;
-                    kioskClient.setResolver(genesisDIN, resolver.address, {
-                        from: alice
-                    });
-                    callback();
-                }
-            }
-        );
-    }
-
-    function sign(web3) {
+    function sign(web3, done) {
         var DIN = genesisDIN;
         var priceInMarks = 5 * Math.pow(10, 18); // 5 MARKs
         var price = new BN(priceInMarks.toString(), 16); // BigNumber
-        var priceValidUntil = new Date().getTime() + 100000;
+        // price = 0;
+        priceValidUntil = new Date().getTime() + 100000;
 
-        var args = [
-            genesisDIN,
-            price,
-            priceValidUntil
-        ];
+        var args = [genesisDIN, price, priceValidUntil];
 
-        var argTypes = [
-            "uint256",
-            "uint256",
-            "uint256"
-        ];
+        var argTypes = ["uint256", "uint256", "uint256"];
 
         var msg = ABI.soliditySHA3(argTypes, args);
 
         web3.eth.sign(alice, util.bufferToHex(msg), function(err, result) {
+            console.log(result);
             signature = util.fromRpcSig(result);
+            done();
         });
-
     }
 
     describe("#owner()", function() {
@@ -191,9 +147,12 @@ describe("Kiosk", function() {
         });
     });
 
-    // describe("#buy()", function() {
-    //     it("should buy a product", function(done) {
-    //         kioskClient.buy(1000000000, 1, ...)
-    //     }
-    // }
+    describe("#buy()", function() {
+        it("should buy a product", function(done) {
+            var { v, r, s } = signature;
+            kioskClient.buy(genesisDIN, 1, 0, v, r, s).then(function(result) {
+                console.log(result);
+            });
+        });
+    });
 });
