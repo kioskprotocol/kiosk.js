@@ -2,6 +2,9 @@ var Web3 = require("web3");
 var Contracts = require("./contracts.js");
 var contracts = new Contracts();
 var Promise = require("bluebird");
+var Transaction = require("ethereumjs-tx");
+var CryptoJS = require("crypto-js");
+var coder = require("web3/lib/solidity/coder");
 
 function Kiosk(web3, registry, buy) {
     this.web3 = web3;
@@ -92,6 +95,64 @@ Kiosk.prototype.buyProduct = function(
         s,
         params
     );
+};
+
+/**
+ * Encodes function data
+ * Source: https://github.com/ConsenSys/eth-lightwallet/blob/master/lib/txutils.js
+ */
+function encodeFunctionTxData(functionName, types, args) {
+    var fullName = functionName + "(" + types.join() + ")";
+    var signature = CryptoJS.SHA3(fullName, {
+        outputLength: 256
+    })
+        .toString(CryptoJS.enc.Hex)
+        .slice(0, 8);
+    var dataHex = signature + coder.encodeParams(types, args);
+    return "0x" + dataHex;
+}
+
+function createRawTransaction(account, contractAddr, value, data) {
+    var nonce = this.web3.eth.getTransactionCount(account);
+    return new Transaction({
+        to: contractAddr,
+        value: value,
+        nonce: nonce,
+        data: data,
+        gasLimit: 4700000
+    });
+}
+
+function signRawTransaction(transaction, privateKey) {
+    transaction.sign(Buffer.from(privateKey, "hex"));
+    return transaction.serialize().toString("hex");
+}
+
+Kiosk.prototype.signRawTransactionBuy = function(
+    DIN,
+    quantity,
+    totalValue,
+    priceValidUntil,
+    v,
+    r,
+    s,
+    account,
+    privateKey
+) {
+    var types = [
+        "uint256",
+        "uint256",
+        "uint256",
+        "uint256",
+        "uint8",
+        "bytes32",
+        "bytes32"
+    ];
+    var args = [DIN, quantity, totalValue, priceValidUntil, v, r, s];
+    var data = encodeFunctionTxData("buy", types, args);
+    var tx = createRawTransaction(account, this.buy.address, 0, data);
+    var signedTx = signRawTransaction(tx, privateKey);
+    return signedTx;
 };
 
 module.exports = Kiosk;
