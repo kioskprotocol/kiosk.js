@@ -14,6 +14,8 @@ var chai = require("chai"),
     expect = chai.expect,
     should = chai.should();
 
+// Use "testrpc -s kiosk" in the terminal. 
+// "kiosk" is the seed word that generates the hardcoded private key in the test.
 contract("testrpc", accounts => {
     let kiosk;
 
@@ -49,10 +51,7 @@ contract("testrpc", accounts => {
 
         // Register a new DIN and set its resolver
         await registrar.registerDIN({ from: alice });
-        await registry.setResolver(DIN, resolver.address);
-
-        // Transfer some MARKs to Bob so he can buy the product
-        await marketToken.transfer(bob, price, { from: alice });
+        await registry.setResolver(DIN, resolver.address); 
 
         // Alice signs message to sell product for 5 MARKs
         const args = [DIN, price, priceValidUntil];
@@ -98,9 +97,13 @@ contract("testrpc", accounts => {
     });
 
     it("should buy a product", async () => {
-        var { v, r, s } = signature;
+        // Send 5 MARKs to Bob
+        await marketToken.transfer(bob, price, { from: alice });
+
         const balance = await marketToken.balanceOf(bob);
         expect(balance.toNumber()).to.equal(price);
+
+        var { v, r, s } = signature;
         const result = await kiosk.buyProduct(
             DIN,
             1,
@@ -114,4 +117,30 @@ contract("testrpc", accounts => {
         const newBalance = await marketToken.balanceOf(bob);
         expect(newBalance.toNumber()).to.equal(0);
     });
+
+    it("should sign a raw buy transaction", async () => {
+        // Send 5 MARKs to Bob
+        await marketToken.transfer(bob, price, { from: alice });
+
+        const balance = await marketToken.balanceOf(bob);
+        expect(balance.toNumber()).to.equal(price);
+
+        var { v, r, s } = signature;
+        const rawTx = await kiosk.signRawTransactionBuy(
+            DIN,
+            1,
+            price,
+            priceValidUntil,
+            v,
+            util.bufferToHex(r),
+            util.bufferToHex(s),
+            bob,
+            "7cf64495013211b2b3e75ea027741a312bc674d52ff5de03e6a426b46cf7647c" // Bob's private key
+        );
+        const result = await web3.eth.sendRawTransaction(rawTx);
+
+        const newBalance = await marketToken.balanceOf(bob);
+        expect(newBalance.toNumber()).to.equal(0);
+    });
+
 });

@@ -1,0 +1,7 @@
+build
+contracts
+migrations
+node_modules
+test
+.env
+truffle.js
