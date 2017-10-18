@@ -28,51 +28,58 @@ function Kiosk(web3, registry, buy) {
 }
 
 Kiosk.prototype.owner = function(DIN) {
-    return this.registryPromise.then(function(registry) {
-        return registry.ownerAsync(DIN);
-    }).bind(this);
+    return this.registryPromise
+        .then(function(registry) {
+            return registry.ownerAsync(DIN);
+        })
+        .bind(this);
 };
 
 Kiosk.prototype.resolver = function(DIN) {
-    return this.registryPromise.then(function(registry) {
-        return registry.resolverAsync(DIN);
-    }).bind(this);
+    return this.registryPromise
+        .then(function(registry) {
+            return registry.resolverAsync(DIN);
+        })
+        .bind(this);
 };
 
 Kiosk.prototype.setOwner = function(DIN, owner, params) {
-    return this.registryPromise.then(function(registry) {
-        return registry.setOwnerAsync(DIN, owner, params);
-    }).bind(this);
+    return this.registryPromise
+        .then(function(registry) {
+            return registry.setOwnerAsync(DIN, owner, params);
+        })
+        .bind(this);
 };
 
 Kiosk.prototype.setResolver = function(DIN, resolver, params) {
-    return this.registryPromise.then(function(registry) {
-        return registry.setResolverAsync(DIN, resolver, params);
-    }).bind(this);
+    return this.registryPromise
+        .then(function(registry) {
+            return registry.setResolverAsync(DIN, resolver, params);
+        })
+        .bind(this);
 };
 
-function productURL(DIN, resolverAddr) {
-    if (resolverAddr !== "0x0000000000000000000000000000000000000000") {
-        var resolverContract = this.web3.eth
-            .contract(contracts.resolverABI)
-            .at(resolverAddr);
-        var resolverPromise = Promise.resolve(
-            Promise.promisifyAll(resolverContract)
-        );
-        return resolverPromise.then(function(resolver) {
-            return resolver.productURLAsync(DIN);
-        });
-    } else {
-        return "";
-    }
-}
-
 Kiosk.prototype.productURL = function(DIN) {
-    return this.resolver(DIN).then(function(result) {
-        return result.then(function(resolverAddr) {
-            return productURL(DIN, resolverAddr);
-        });
-    }).bind(this);
+    var web3 = this.web3;
+    return this.registryPromise
+        .then(function(registry) {
+            return registry.resolverAsync(DIN).then(function(resolverAddr) {
+                if (resolverAddr !== "0x0000000000000000000000000000000000000000") {
+                    var resolverContract = web3.eth
+                        .contract(contracts.resolverABI)
+                        .at(resolverAddr);
+                    var resolverPromise = Promise.resolve(
+                        Promise.promisifyAll(resolverContract)
+                    );
+                    return resolverPromise.then(function(resolver) {
+                        return resolver.productURLAsync(DIN);
+                    });
+                } else {
+                    return "";
+                }
+            });
+        })
+        .bind(this);
 };
 
 Kiosk.prototype.buyProduct = function(
@@ -85,18 +92,20 @@ Kiosk.prototype.buyProduct = function(
     s,
     params
 ) {
-    return this.buyPromise.then(function(buy) {
-        return buy.buy(
-            DIN,
-            quantity,
-            totalValue,
-            priceValidUntil,
-            v,
-            r,
-            s,
-            params
-        );
-    }).bind(this);
+    return this.buyPromise
+        .then(function(buy) {
+            return buy.buy(
+                DIN,
+                quantity,
+                totalValue,
+                priceValidUntil,
+                v,
+                r,
+                s,
+                params
+            );
+        })
+        .bind(this);
 };
 
 /**
