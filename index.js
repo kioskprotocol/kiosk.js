@@ -63,8 +63,13 @@ Kiosk.prototype.productURL = function(DIN) {
     var web3 = this.web3;
     return this.registryPromise
         .then(function(registry) {
+            console.log("333");
             return registry.resolverAsync(DIN).then(function(resolverAddr) {
-                if (resolverAddr !== "0x0000000000000000000000000000000000000000") {
+                console.log("333");
+                if (
+                    resolverAddr !==
+                    "0x0000000000000000000000000000000000000000"
+                ) {
                     var resolverContract = web3.eth
                         .contract(contracts.resolverABI)
                         .at(resolverAddr);
@@ -72,6 +77,7 @@ Kiosk.prototype.productURL = function(DIN) {
                         Promise.promisifyAll(resolverContract)
                     );
                     return resolverPromise.then(function(resolver) {
+                        console.log("333");
                         return resolver.productURLAsync(DIN);
                     });
                 } else {
@@ -123,15 +129,17 @@ function encodeFunctionTxData(functionName, types, args) {
     return "0x" + dataHex;
 }
 
-function createRawTransaction(account, contractAddr, value, data) {
-    var nonce = this.web3.eth.getTransactionCount(account);
-    return new Transaction({
-        to: contractAddr,
-        value: value,
-        nonce: nonce,
-        data: data,
-        gasLimit: 4700000
-    }).bind(this);
+function createRawTransaction(web3, account, contractAddr, value, data) {
+    var getTransactionCountAsync = Promise.promisify(web3.eth.getTransactionCount);
+    return getTransactionCountAsync(account).then(function(nonce) {
+        return new Transaction({
+            to: contractAddr,
+            value: value,
+            nonce: nonce,
+            data: data,
+            gasLimit: 4700000
+        });
+    });
 }
 
 function signRawTransaction(transaction, privateKey) {
@@ -161,9 +169,16 @@ Kiosk.prototype.signRawTransactionBuy = function(
     ];
     var args = [DIN, quantity, totalValue, priceValidUntil, v, r, s];
     var data = encodeFunctionTxData("buy", types, args);
-    var tx = createRawTransaction(account, this.buy.address, 0, data);
-    var signedTx = signRawTransaction(tx, privateKey);
-    return signedTx;
+    return createRawTransaction(
+        this.web3,
+        account,
+        contracts.buyAddressKovan,
+        0,
+        data
+    ).then(function(tx) {
+        var signedTx = signRawTransaction(tx, privateKey);
+        return signedTx;
+    })
 };
 
 module.exports = Kiosk;
