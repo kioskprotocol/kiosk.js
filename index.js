@@ -10,46 +10,45 @@ function Kiosk(web3, registry, buy) {
     this.web3 = web3;
 
     if (registry && buy) {
-        this.registry = registry;
-        this.buy = buy;
+        this.registryPromise = Promise.resolve(Promise.promisifyAll(registry));
+        this.buyPromise = Promise.resolve(Promise.promisifyAll(buy));
     } else {
-        const network = web3.version.network;
-
-        var registryAddress;
-        var buyAddress;
-
-        switch (network) {
-            case "1": // Main Network
-                registryAddress = contracts.registryAddressMainNet;
-                break;
-            case "42": // Kovan
-                registryAddress = contracts.registryAddressKovan;
-                buyAddress = contracts.buyAddressKovan;
-                break;
-            default:
-                break;
-        }
-        this.registry = web3.eth
+        // Kovan
+        var registryContract = web3.eth
             .contract(contracts.registryABI)
-            .at(registryAddress);
-        this.buy = web3.eth.contract(contracts.buyABI).at(buyAddress);
+            .at(contracts.registryAddressKovan);
+        this.registryPromise = Promise.resolve(
+            Promise.promisifyAll(registryContract)
+        );
+        var buyContract = web3.eth
+            .contract(contracts.buyABI)
+            .at(contracts.buyAddressKovan);
+        this.buyPromise = Promise.resolve(Promise.promisifyAll(buyContract));
     }
 }
 
 Kiosk.prototype.owner = function(DIN) {
-    return this.registry.owner(DIN);
+    return this.registryPromise.then(function(registry) {
+        return registry.ownerAsync(DIN);
+    });
 };
 
 Kiosk.prototype.resolver = function(DIN) {
-    return this.registry.resolver(DIN);
+    return this.registryPromise.then(function(registry) {
+        return registry.resolverAsync(DIN);
+    });
 };
 
 Kiosk.prototype.setOwner = function(DIN, owner, params) {
-    return this.registry.setOwner(DIN, owner, params);
+    return this.registryPromise.then(function(registry) {
+        return registry.setOwnerAsync(DIN, owner, params);
+    });
 };
 
 Kiosk.prototype.setResolver = function(DIN, resolver, params) {
-    return this.registry.setResolver(DIN, resolver, params);
+    return this.registryPromise.then(function(registry) {
+        return registry.setResolverAsync(DIN, resolver, params);
+    });
 };
 
 function productURL(DIN, resolverAddr) {
@@ -57,22 +56,23 @@ function productURL(DIN, resolverAddr) {
         var resolverContract = this.web3.eth
             .contract(contracts.resolverABI)
             .at(resolverAddr);
-        return resolverContract.productURL(DIN);
+        var resolverPromise = Promise.resolve(
+            Promise.promisifyAll(resolverContract)
+        );
+        return resolverPromise.then(function(resolver) {
+            return resolver.productURLAsync(DIN);
+        });
     } else {
         return "";
     }
 }
 
 Kiosk.prototype.productURL = function(DIN) {
-    var resolver = this.resolver(DIN);
-    if (typeof resolver === "string") {
-        return productURL(DIN, resolver);
-    } else {
-        // Promise
-        return resolver.then(function(result) {
-            return productURL(DIN, result);
+    return this.resolver(DIN).then(function(result) {
+        return result.then(function(resolverAddr) {
+            return productURL(DIN, resolverAddr);
         });
-    }
+    });
 };
 
 Kiosk.prototype.buyProduct = function(
@@ -85,16 +85,18 @@ Kiosk.prototype.buyProduct = function(
     s,
     params
 ) {
-    return this.buy.buy(
-        DIN,
-        quantity,
-        totalValue,
-        priceValidUntil,
-        v,
-        r,
-        s,
-        params
-    );
+    return this.buyPromise.then(function(buy) {
+        return buy.buy(
+            DIN,
+            quantity,
+            totalValue,
+            priceValidUntil,
+            v,
+            r,
+            s,
+            params
+        );
+    });
 };
 
 /**
