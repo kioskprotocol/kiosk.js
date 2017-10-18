@@ -30,25 +30,25 @@ function Kiosk(web3, registry, buy) {
 Kiosk.prototype.owner = function(DIN) {
     return this.registryPromise.then(function(registry) {
         return registry.ownerAsync(DIN);
-    });
+    }).bind(this);
 };
 
 Kiosk.prototype.resolver = function(DIN) {
     return this.registryPromise.then(function(registry) {
         return registry.resolverAsync(DIN);
-    });
+    }).bind(this);
 };
 
 Kiosk.prototype.setOwner = function(DIN, owner, params) {
     return this.registryPromise.then(function(registry) {
         return registry.setOwnerAsync(DIN, owner, params);
-    });
+    }).bind(this);
 };
 
 Kiosk.prototype.setResolver = function(DIN, resolver, params) {
     return this.registryPromise.then(function(registry) {
         return registry.setResolverAsync(DIN, resolver, params);
-    });
+    }).bind(this);
 };
 
 function productURL(DIN, resolverAddr) {
@@ -72,7 +72,7 @@ Kiosk.prototype.productURL = function(DIN) {
         return result.then(function(resolverAddr) {
             return productURL(DIN, resolverAddr);
         });
-    });
+    }).bind(this);
 };
 
 Kiosk.prototype.buyProduct = function(
@@ -96,7 +96,7 @@ Kiosk.prototype.buyProduct = function(
             s,
             params
         );
-    });
+    }).bind(this);
 };
 
 /**
@@ -122,7 +122,7 @@ function createRawTransaction(account, contractAddr, value, data) {
         nonce: nonce,
         data: data,
         gasLimit: 4700000
-    });
+    }).bind(this);
 }
 
 function signRawTransaction(transaction, privateKey) {
