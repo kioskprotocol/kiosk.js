@@ -63,9 +63,7 @@ Kiosk.prototype.productURL = function(DIN) {
     var web3 = this.web3;
     return this.registryPromise
         .then(function(registry) {
-            console.log("333");
             return registry.resolverAsync(DIN).then(function(resolverAddr) {
-                console.log("333");
                 if (
                     resolverAddr !==
                     "0x0000000000000000000000000000000000000000"
@@ -77,7 +75,6 @@ Kiosk.prototype.productURL = function(DIN) {
                         Promise.promisifyAll(resolverContract)
                     );
                     return resolverPromise.then(function(resolver) {
-                        console.log("333");
                         return resolver.productURLAsync(DIN);
                     });
                 } else {
