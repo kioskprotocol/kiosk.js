@@ -4,7 +4,6 @@ var contracts = new Contracts();
 var Promise = require("bluebird");
 var Transaction = require("ethereumjs-tx");
 var CryptoJS = require("crypto-js");
-var coder = require("web3/lib/solidity/coder");
 
 function Kiosk(web3, registry, buy) {
     this.web3 = web3;
@@ -85,6 +84,14 @@ Kiosk.prototype.productURL = function(DIN) {
         .bind(this);
 };
 
+Kiosk.prototype.isValidSignature = function(signer, hash, v, r, s) {
+    return this.buyPromise
+        .then(function(buy) {
+            return buy.isValidSignature(signer, hash, v, r, s);
+        })
+        .bind(this);
+};
+
 Kiosk.prototype.buyProduct = function(
     DIN,
     quantity,
@@ -122,12 +129,14 @@ function encodeFunctionTxData(functionName, types, args) {
     })
         .toString(CryptoJS.enc.Hex)
         .slice(0, 8);
-    var dataHex = signature + coder.encodeParams(types, args);
+    var dataHex = signature + web3.eth.abi.encodeParams(types, args);
     return "0x" + dataHex;
 }
 
 function createRawTransaction(web3, account, contractAddr, value, data) {
-    var getTransactionCountAsync = Promise.promisify(web3.eth.getTransactionCount);
+    var getTransactionCountAsync = Promise.promisify(
+        web3.eth.getTransactionCount
+    );
     return getTransactionCountAsync(account).then(function(nonce) {
         return new Transaction({
             to: contractAddr,
@@ -175,7 +184,7 @@ Kiosk.prototype.signRawTransactionBuy = function(
     ).then(function(tx) {
         var signedTx = signRawTransaction(tx, privateKey);
         return signedTx;
-    })
+    });
 };
 
 module.exports = Kiosk;

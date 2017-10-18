@@ -43,10 +43,7 @@ contract("testrpc", accounts => {
         buy = await Buy.deployed();
         marketToken = await MarketToken.deployed();
 
-        web3.setProvider(
-            new web3.providers.HttpProvider("http://localhost:8545")
-        );
-
+        web3.setProvider(new web3.providers.HttpProvider("http://localhost:8545"));
         kiosk = new Kiosk(web3, registry, buy);
 
         // Register a new DIN and set its resolver
