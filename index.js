@@ -7,7 +7,7 @@ var CryptoJS = require("crypto-js");
 
 function Kiosk(web3, registry, buy) {
     this.web3 = web3;
-
+    
     if (registry && buy) {
         this.registryPromise = Promise.resolve(Promise.promisifyAll(registry));
         this.buyPromise = Promise.resolve(Promise.promisifyAll(buy));
