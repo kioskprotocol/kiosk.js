@@ -55,7 +55,7 @@ describe("kovan", () => {
             priceValidUntil,
             seller.privateKey
         );
-        console.log(signature);
+        // console.log(signature);
     });
 
     it("should validate a signature", async () => {
@@ -87,8 +87,7 @@ describe("kovan", () => {
             buyer.privateKey
         );
         rawTx = signedTx.rawTransaction;
-        console.log(rawTx);
-        // const result = await web3.eth.sendSignedTransaction(rawTx);
+        const result = await web3.eth.sendSignedTransaction(rawTx);
         // console.log("RESULT: " + result);
     });
 });
