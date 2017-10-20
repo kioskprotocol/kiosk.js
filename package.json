@@ -6,7 +6,7 @@
   "scripts": {
     "build": "babel src --presets babel-preset-es2015 --out-dir dist",
     "prepublish": "npm run build",
-    "test": "mocha --compilers js:babel-core/register ./test/*.js"
+    "test": "npm run build && mocha --compilers js:babel-core/register ./test/*.js"
   },
   "author": "Rich McAteer <rich@kioskprotocol.com> (http://www.kioskprotocol.com/)",
   "license": "Apache 2.0",

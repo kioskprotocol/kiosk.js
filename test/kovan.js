@@ -1,5 +1,5 @@
 var Web3 = require("web3");
-var Kiosk = require("../src/index.js");
+var Kiosk = require("../dist/index.js");
 var assert = require("assert");
 var chai = require("chai"),
     expect = chai.expect,
@@ -23,14 +23,12 @@ describe("kovan", () => {
     let rawTx;
 
     before(async () => {
-        web3 = new Web3(
-            new Web3.providers.HttpProvider(process.env.INFURA_KOVAN)
-        );
+        kiosk = new Kiosk(process.env.INFURA_KOVAN);
+        web3 = kiosk.web3;
         web3.eth.accounts.wallet.add(process.env.BUYER_PRIVATE_KEY);
         web3.eth.accounts.wallet.add(process.env.SELLER_PRIVATE_KEY);
         buyer = web3.eth.accounts.wallet[0];
         seller = web3.eth.accounts.wallet[1];
-        kiosk = new Kiosk(web3);
     });
 
     it("should return the correct owner of a DIN", async () => {
@@ -87,6 +85,6 @@ describe("kovan", () => {
             buyer.privateKey
         );
         rawTx = signedTx.rawTransaction;
-        const result = await web3.eth.sendSignedTransaction(rawTx);
+        // const result = await web3.eth.sendSignedTransaction(rawTx);
     });
 });

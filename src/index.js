@@ -1,16 +1,19 @@
 var Web3 = require("web3");
 var contracts = new (require("./contracts.js"))();
-var CryptoJS = require("crypto-js");
 
 class Kiosk {
     constructor(web3) {
-        this.web3 = web3;
+        if (typeof web3 === "string") {
+            this.web3 = new Web3(new Web3.providers.HttpProvider(web3));
+        } else {
+            this.web3 = web3;
+        }
 
-        this.registry = new web3.eth.Contract(
+        this.registry = new this.web3.eth.Contract(
             contracts.registryABI,
             contracts.registryAddressKovan
         );
-        this.buy = new web3.eth.Contract(
+        this.buy = new this.web3.eth.Contract(
             contracts.buyABI,
             contracts.buyAddressKovan
         );
