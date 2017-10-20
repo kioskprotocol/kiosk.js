@@ -88,6 +88,5 @@ describe("kovan", () => {
         );
         rawTx = signedTx.rawTransaction;
         const result = await web3.eth.sendSignedTransaction(rawTx);
-        // console.log("RESULT: " + result);
     });
 });
