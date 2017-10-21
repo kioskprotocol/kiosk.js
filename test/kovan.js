@@ -28,6 +28,7 @@ describe("kovan", () => {
         web3.eth.accounts.wallet.add(process.env.BUYER_PRIVATE_KEY);
         web3.eth.accounts.wallet.add(process.env.SELLER_PRIVATE_KEY);
         buyer = web3.eth.accounts.wallet[0];
+        console.log(buyer);
         seller = web3.eth.accounts.wallet[1];
     });
 
@@ -53,7 +54,7 @@ describe("kovan", () => {
             priceValidUntil,
             seller.privateKey
         );
-        // console.log(signature);
+        console.log(signature);
     });
 
     it("should validate a signature", async () => {

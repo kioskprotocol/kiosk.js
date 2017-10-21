@@ -1,5 +1,7 @@
 var Web3 = require("web3");
 var contracts = new (require("./contracts.js"))();
+var Account = require("eth-lib/lib/account");
+var utils = require('web3-utils');
 
 class Kiosk {
     constructor(web3) {
@@ -47,8 +49,17 @@ class Kiosk {
             { type: "uint256", value: price },
             { type: "uint256", value: priceValidUntil }
         );
-        const signature = this.web3.eth.accounts.signHash(hash, privateKey);
-        return signature;
+        var prefix = "\x19Ethereum Signed Message:\n32";
+        var messageHash = utils.soliditySha3(prefix, hash);
+        var signature = Account.sign(messageHash, privateKey);
+        var vrs = Account.decodeSignature(signature);
+        return {
+            messageHash: messageHash,
+            v: vrs[0],
+            r: vrs[1],
+            s: vrs[2],
+            signature: signature
+        };
     }
 
     signBuyTransaction(
