@@ -53,9 +53,10 @@ class Kiosk {
         var messageHash = utils.soliditySha3(prefix, hash);
         var signature = Account.sign(messageHash, privateKey);
         var vrs = Account.decodeSignature(signature);
+        var v = vrs[0];
         return {
             messageHash: messageHash,
-            v: vrs[0],
+            v: this.web3.utils.toDecimal(v),
             r: vrs[1],
             s: vrs[2],
             signature: signature
