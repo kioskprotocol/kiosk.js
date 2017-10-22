@@ -20,7 +20,6 @@ describe("kovan", () => {
 
     // Signature
     let signature;
-    let rawTx;
 
     before(async () => {
         kiosk = new Kiosk(process.env.INFURA_KOVAN);
@@ -44,7 +43,14 @@ describe("kovan", () => {
 
     it("should get the product URL for a given DIN", async () => {
         const url = await kiosk.productURL(DIN);
-        expect(url).to.equal("https://kiosk-demo-shop.herokuapp.com/v0/products/");
+        expect(url).to.equal(
+            "https://kiosk-demo-shop.herokuapp.com/v0/products/"
+        );
+    });
+
+    it("should get the cart for a given buyer", async () => {
+        const cart = await kiosk.getCart(buyer.address);
+        console.log(cart);
     });
 
     it("should sign a price message", async () => {
@@ -73,6 +79,15 @@ describe("kovan", () => {
         expect(valid).to.equal(true);
     });
 
+    it("should sign an add to cart transaction", async () => {
+        const signedTx = await kiosk.signAddToCartTransaction(
+            DIN,
+            buyer.address,
+            buyer.privateKey
+        );
+        // const result = await web3.eth.sendSignedTransaction(signedTx);
+    });
+
     it("should sign a buy transaction", async () => {
         const signedTx = await kiosk.signBuyTransaction(
             DIN,
@@ -85,7 +100,6 @@ describe("kovan", () => {
             buyer.address,
             buyer.privateKey
         );
-        rawTx = signedTx.rawTransaction;
-        // const result = await web3.eth.sendSignedTransaction(rawTx);
+        // const result = await web3.eth.sendSignedTransaction(signedTx);
     });
 });
