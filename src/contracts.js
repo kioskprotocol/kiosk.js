@@ -7,6 +7,9 @@ const resolverABI = [{"constant":true,"inputs":[{"name":"interfaceID","type":"by
 const buyABI = [{"constant":false,"inputs":[{"name":"DIN","type":"uint256"},{"name":"quantity","type":"uint256"},{"name":"totalValue","type":"uint256"},{"name":"priceValidUntil","type":"uint256"},{"name":"v","type":"uint8"},{"name":"r","type":"bytes32"},{"name":"s","type":"bytes32"}],"name":"buy","outputs":[{"name":"orderID","type":"uint256"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"orderIndex","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"registry","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"signer","type":"address"},{"name":"hash","type":"bytes32"},{"name":"v","type":"uint8"},{"name":"r","type":"bytes32"},{"name":"s","type":"bytes32"}],"name":"isValidSignature","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"marketToken","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"inputs":[{"name":"_token","type":"address"},{"name":"_registry","type":"address"}],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"name":"errorId","type":"uint8"}],"name":"LogError","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"hash","type":"bytes32"}],"name":"LogHash","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"orderID","type":"uint256"},{"indexed":true,"name":"buyer","type":"address"},{"indexed":true,"name":"seller","type":"address"},{"indexed":true,"name":"DIN","type":"uint256"},{"indexed":false,"name":"quantity","type":"uint256"},{"indexed":false,"name":"value","type":"uint256"},{"indexed":false,"name":"timestamp","type":"uint256"}],"name":"NewOrder","type":"event"}];
 const buyAddressKovan = "0xE257f2a2FB728B426038FfA5049AE2346351E518";
 
+const cartABI = [{"constant":false,"inputs":[{"name":"DIN","type":"uint256"}],"name":"addToCart","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"name":"DIN","type":"uint256"},{"indexed":true,"name":"buyer","type":"address"}],"name":"AddToCart","type":"event"}]
+const cartAddressKovan = "0xf72CC66521D3c24d58aeF6F3697E5C8a386D999e";
+
 class Contracts {
     constructor() {
         this.registryABI = registryABI;
@@ -15,6 +18,8 @@ class Contracts {
         this.resolverABI = resolverABI;
         this.buyABI = buyABI;
         this.buyAddressKovan = buyAddressKovan;
+        this.cartABI = cartABI;
+        this.cartAddressKovan = cartAddressKovan;
     }
 }
 
