@@ -13,10 +13,13 @@ describe("kovan", () => {
     let seller; // Owner of DIN 1000000001 on Kovan
 
     // Product
-    const DIN = 1000000001;
+    const DIN = 1000000011;
     const quantity = 1;
     const price = 8000000;
+    const priceCurrency = "0x0000000000000000000000000000000000000000" // Ether
     const priceValidUntil = 1514160000;
+    const affiliateFee = 0;
+    const affiliate = "0x0000000000000000000000000000000000000000"; // No affiliate
 
     // Signature
     let signature;
@@ -27,7 +30,6 @@ describe("kovan", () => {
         web3.eth.accounts.wallet.add(process.env.BUYER_PRIVATE_KEY);
         web3.eth.accounts.wallet.add(process.env.SELLER_PRIVATE_KEY);
         buyer = web3.eth.accounts.wallet[0];
-        console.log(buyer);
         seller = web3.eth.accounts.wallet[1];
     });
 
@@ -38,36 +40,45 @@ describe("kovan", () => {
 
     it("should return the correct resolver of a DIN", async () => {
         const resolver = await kiosk.resolver(DIN);
-        expect(resolver).to.equal("0xA9b81c7d571717f0817688252EF2C9cCc039B939");
+        expect(resolver).to.equal("0xc5E1Eaea601B7a64D01b74c747cEaB7fcBe429f9");
     });
 
     it("should get the product URL for a given DIN", async () => {
         const url = await kiosk.productURL(DIN);
         expect(url).to.equal(
-            "https://kiosk-demo-shop.herokuapp.com/v0/products/"
+            "https://kiosk-shopify.herokuapp.com/"
         );
+    });
+
+    it("should get the correct merchant for a given DIN", async () => {
+        const merchant = await kiosk.merchant(DIN);
+        console.log(merchant);
     });
 
     it("should get the cart for a given buyer", async () => {
         const cart = await kiosk.getCart(buyer.address);
-        console.log(cart);
+        // console.log(cart);
     });
 
     it("should sign a price message", async () => {
         signature = await kiosk.signPriceMessage(
             DIN,
             price,
+            priceCurrency,
             priceValidUntil,
+            affiliateFee,
             seller.privateKey
         );
-        console.log(signature);
+        // console.log(signature);
     });
 
     it("should validate a signature", async () => {
         const hash = web3.utils.soliditySha3(
             { type: "uint256", value: DIN },
             { type: "uint256", value: price },
-            { type: "uint256", value: priceValidUntil }
+            { type: "address", value: priceCurrency },
+            { type: "uint256", value: priceValidUntil },
+            { type: "uint256", value: affiliateFee }
         );
         const valid = await kiosk.isValidSignature(
             seller.address,
@@ -93,13 +104,18 @@ describe("kovan", () => {
             DIN,
             quantity,
             price,
+            priceCurrency,
             priceValidUntil,
+            affiliateFee,
+            affiliate,
             signature.v,
             signature.r,
             signature.s,
             buyer.address,
             buyer.privateKey
         );
-        // const result = await web3.eth.sendSignedTransaction(signedTx);
+        // console.log(signedTx);
+        const result = await web3.eth.sendSignedTransaction(signedTx);
     });
+
 });
