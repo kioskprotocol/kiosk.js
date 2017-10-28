@@ -68,6 +68,17 @@ class Kiosk {
             });
     }
 
+    getOrder(orderID) {
+        return this.checkout
+        .getPastEvents("NewOrder", { 
+            filter: { orderId: orderID },
+            fromBlock: 0, 
+            toBlock: "latest"
+        }).then(events => {
+            console.log(events);
+        });
+    }
+
     isValidSignature(signer, hash, v, r, s) {
         return this.checkout.methods
             .isValidSignature(signer, hash, v, r, s)

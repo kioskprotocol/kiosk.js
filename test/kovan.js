@@ -21,6 +21,9 @@ describe("kovan", () => {
     const affiliateFee = 0;
     const affiliate = "0x0000000000000000000000000000000000000000"; // No affiliate
 
+    // Order
+    const orderID = 1;
+
     // Signature
     let signature;
 
@@ -59,6 +62,10 @@ describe("kovan", () => {
         const cart = await kiosk.getCart(buyer.address);
         // console.log(cart);
     });
+
+    it("should get the details for a given order", async () => {
+        const order = await kiosk.getOrder(orderID);
+    })
 
     it("should sign a price message", async () => {
         signature = await kiosk.signPriceMessage(
@@ -115,7 +122,7 @@ describe("kovan", () => {
             buyer.privateKey
         );
         // console.log(signedTx);
-        const result = await web3.eth.sendSignedTransaction(signedTx);
+        // const result = await web3.eth.sendSignedTransaction(signedTx);
     });
 
 });
