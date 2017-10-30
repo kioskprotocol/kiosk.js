@@ -2,6 +2,7 @@ var Web3 = require("web3");
 var contracts = new (require("./contracts.js"))();
 var Account = require("eth-lib/lib/account");
 var utils = require("web3-utils");
+var Promise = require("bluebird");
 
 class Kiosk {
     constructor(web3) {
@@ -11,47 +12,101 @@ class Kiosk {
             this.web3 = web3;
         }
 
-        this.registry = new this.web3.eth.Contract(
-            contracts.registryABI,
-            contracts.registryAddressKovan
-        );
-        this.checkout = new this.web3.eth.Contract(
-            contracts.checkoutABI,
-            contracts.checkoutAddressKovan
-        );
-        this.cart = new this.web3.eth.Contract(
-            contracts.cartABI,
-            contracts.cartAddressKovan
-        );
+        // Version 1.X
+        if (typeof this.web3.version === "string") {
+            this.isWeb3Beta = true;
+            this.registry = new this.web3.eth.Contract(
+                contracts.registryABI,
+                contracts.registryAddressKovan
+            );
+            this.checkout = new this.web3.eth.Contract(
+                contracts.checkoutABI,
+                contracts.checkoutAddressKovan
+            );
+            this.cart = new this.web3.eth.Contract(
+                contracts.cartABI,
+                contracts.cartAddressKovan
+            );
+            // Version 0.X
+        } else {
+            this.isWeb3Beta = false;
+            const registryContract = this.web3.eth
+                .contract(contracts.registryABI)
+                .at(contracts.registryAddressKovan);
+            this.registry = Promise.resolve(
+                Promise.promisifyAll(registryContract)
+            );
+            this.checkout = this.web3.eth
+                .contract(contracts.checkoutABI)
+                .at(contracts.checkoutAddressKovan);
+            this.cart = this.web3.eth
+                .contract(contracts.cartABI)
+                .at(contracts.cartAddressKovan);
+        }
     }
 
     owner(DIN) {
-        console.log(DIN);
-        return this.registry.methods.owner(DIN).call();
+        if (this.isWeb3Beta === true) {
+            return this.registry.methods.owner(DIN).call();
+        } else {
+            return this.registry.then(instance => {
+                return instance.ownerAsync(DIN);
+            });
+        }
     }
 
     resolver(DIN) {
-        return this.registry.methods.resolver(DIN).call();
+        if (this.isWeb3Beta === true) {
+            return this.registry.methods.resolver(DIN).call();
+        } else {
+            return this.registry.then(instance => {
+                return instance.resolverAsync(DIN);
+            });
+        }
+    }
+
+    resolverContract(DIN) {
+        return this.resolver(DIN).then(resolverAddr => {
+            return Promise.resolve(
+                Promise.promisifyAll(
+                    this.web3.eth
+                        .contract(contracts.resolverABI)
+                        .at(resolverAddr)
+                )
+            );
+        });
     }
 
     productURL(DIN) {
-        return this.resolver(DIN).then(resolverAddr => {
-            const resolver = new this.web3.eth.Contract(
-                contracts.resolverABI,
-                resolverAddr
-            );
-            return resolver.methods.productURL(DIN).call();
-        });
+        if (this.isWeb3Beta === true) {
+            return this.resolver(DIN).then(resolverAddr => {
+                const resolver = new this.web3.eth.Contract(
+                    contracts.resolverABI,
+                    resolverAddr
+                );
+                return resolver.methods.productURL(DIN).call();
+            });
+        } else {
+            return this.resolverContract(DIN).then(resolver => {
+                return resolver.productURLAsync(DIN);
+            });
+        }
     }
 
     merchant(DIN) {
-        return this.resolver(DIN).then(resolverAddr => {
-            const resolver = new this.web3.eth.Contract(
-                contracts.resolverABI,
-                resolverAddr
-            );
-            return resolver.methods.merchant(DIN).call();
-        });
+        if (this.isWeb3Beta === true) {
+            return this.resolver(DIN).then(resolverAddr => {
+                const resolver = new this.web3.eth.Contract(
+                    contracts.resolverABI,
+                    resolverAddr
+                );
+                return resolver.methods.merchant(DIN).call();
+            });
+        } else {
+            return this.resolverContract(DIN).then(resolver => {
+                return resolver.merchantAsync(DIN);
+            });
+        }
     }
 
     getCart(buyer) {
@@ -70,13 +125,14 @@ class Kiosk {
 
     getOrder(orderID) {
         return this.checkout
-        .getPastEvents("NewOrder", { 
-            filter: { orderId: orderID },
-            fromBlock: 0, 
-            toBlock: "latest"
-        }).then(events => {
-            console.log(events);
-        });
+            .getPastEvents("NewOrder", {
+                filter: { orderId: orderID },
+                fromBlock: 0,
+                toBlock: "latest"
+            })
+            .then(events => {
+                console.log(events);
+            });
     }
 
     isValidSignature(signer, hash, v, r, s) {
