@@ -4,6 +4,8 @@ var Account = require("eth-lib/lib/account");
 var utils = require("web3-utils");
 var Promise = require("bluebird");
 
+// TESTING!
+
 class Kiosk {
     constructor(web3) {
         if (typeof web3 === "string") {
