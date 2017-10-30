@@ -132,7 +132,7 @@ class Kiosk {
                     { buyer: buyer },
                     { fromBlock: 0, toBlock: "latest" }
                 );
-                var eventAsync = Promise.resolve(Promise.promisifyAll(event));
+                var eventAsync = Promise.promisifyAll(event);
                 return eventAsync.getAsync().then((err, logs) => {
                     return logs;
                 });
