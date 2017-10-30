@@ -36,12 +36,16 @@ class Kiosk {
             this.registry = Promise.resolve(
                 Promise.promisifyAll(registryContract)
             );
-            this.checkout = this.web3.eth
+            const checkoutContract = this.web3.eth
                 .contract(contracts.checkoutABI)
                 .at(contracts.checkoutAddressKovan);
-            this.cart = this.web3.eth
+            this.checkout = Promise.resolve(
+                Promise.promisifyAll(checkoutContract)
+            );
+            const cartContract = this.web3.eth
                 .contract(contracts.cartABI)
                 .at(contracts.cartAddressKovan);
+            this.cart = Promise.resolve(Promise.promisifyAll(cartContract));
         }
     }
 
@@ -110,17 +114,30 @@ class Kiosk {
     }
 
     getCart(buyer) {
-        return this.cart
-            .getPastEvents("AddToCart", {
-                filter: { buyer: buyer },
-                fromBlock: 0,
-                toBlock: "latest"
-            })
-            .then(events => {
-                return events.map(event => {
-                    return event.returnValues.DIN;
+        if (this.isWeb3Beta === true) {
+            return this.cart
+                .getPastEvents("AddToCart", {
+                    filter: { buyer: buyer },
+                    fromBlock: 0,
+                    toBlock: "latest"
+                })
+                .then(events => {
+                    return events.map(event => {
+                        return event.returnValues.DIN;
+                    });
+                });
+        } else {
+            return this.cart.then(instance => {
+                var event = instance.AddToCart(
+                    { buyer: buyer },
+                    { fromBlock: 0, toBlock: "latest" }
+                );
+                var eventAsync = Promise.resolve(Promise.promisifyAll(event));
+                return eventAsync.getAsync().then((err, logs) => {
+                    return logs;
                 });
             });
+        }
     }
 
     getOrder(orderID) {
