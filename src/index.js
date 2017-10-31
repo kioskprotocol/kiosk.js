@@ -53,10 +53,6 @@ class Kiosk {
 
     getCart(buyer) {
         let DINs = [];
-
-        // const asyncEvent = Promise.promisifyAll(event);
-        // const logs = await asyncEvent.getAsync();
-
         return this.cart.deployed().then(instance => {
             const event = Promise.promisifyAll(
                 instance.AddToCart(
@@ -74,51 +70,86 @@ class Kiosk {
         });
     }
 
-    getOrder(orderID) {
-        return this.checkout
-            .getPastEvents("NewOrder", {
-                filter: { orderId: orderID },
-                fromBlock: 0,
-                toBlock: "latest"
-            })
-            .then(events => {
-                console.log(events);
+    buy(
+        DIN,
+        quantity,
+        totalPrice,
+        priceCurrency,
+        priceValidUntil,
+        affiliateFee,
+        affiliate,
+        v,
+        r,
+        s,
+        account
+    ) {
+        const orderValues = [
+            DIN,
+            quantity,
+            totalPrice,
+            priceValidUntil,
+            affiliateFee
+        ];
+        const orderAddresses = [priceCurrency, affiliate];
+        let value = 0;
+        if (priceCurrency === "0x0000000000000000000000000000000000000000") {
+            // If paying in Ether, we need to set the value
+            value = totalPrice;
+        }
+        return this.checkout.deployed().then(instance => {
+            return instance.buy(orderValues, orderAddresses, v, r, s, {
+                from: account,
+                value: value
             });
+        });
     }
 
-    isValidSignature(signer, hash, v, r, s) {
-        return this.checkout.methods
-            .isValidSignature(signer, hash, v, r, s)
-            .call();
+    signPriceMessage(
+        DIN,
+        price,
+        priceCurrency,
+        priceValidUntil,
+        affiliateFee,
+        privateKey
+    ) {
+        // REQUIRES WEB3 BETA!
+        const hash = this.web3.utils.soliditySha3(
+            { type: "uint256", value: DIN },
+            { type: "uint256", value: price },
+            { type: "address", value: priceCurrency },
+            { type: "uint256", value: priceValidUntil },
+            { type: "uint256", value: affiliateFee }
+        );
+        var prefix = "\x19Ethereum Signed Message:\n32";
+        var messageHash = utils.soliditySha3(prefix, hash);
+        var signature = Account.sign(messageHash, privateKey);
+        var vrs = Account.decodeSignature(signature);
+        var v = vrs[0];
+        return {
+            messageHash: messageHash,
+            v: this.web3.utils.toDecimal(v),
+            r: vrs[1],
+            s: vrs[2],
+            signature: signature
+        };
     }
 
-    // signPriceMessage(
-    //     DIN,
-    //     price,
-    //     priceCurrency,
-    //     priceValidUntil,
-    //     affiliateFee,
-    //     privateKey
-    // ) {
-    //     const hash = this.web3.utils.soliditySha3(
-    //         { type: "uint256", value: DIN },
-    //         { type: "uint256", value: price },
-    //         { type: "address", value: priceCurrency },
-    //         { type: "uint256", value: priceValidUntil },
-    //         { type: "uint256", value: affiliateFee }
-    //     );
-    //     var prefix = "\x19Ethereum Signed Message:\n32";
-    //     var messageHash = utils.soliditySha3(prefix, hash);
-    //     var signature = Account.sign(messageHash, privateKey);
-    //     var vrs = Account.decodeSignature(signature);
-    //     var v = vrs[0];
-    //     return {
-    //         messageHash: messageHash,
-    //         v: this.web3.utils.toDecimal(v),
-    //         r: vrs[1],
-    //         s: vrs[2],
-    //         signature: signature
-    //     };
+    // getOrder(orderID) {
+    //     return this.checkout
+    //         .getPastEvents("NewOrder", {
+    //             filter: { orderId: orderID },
+    //             fromBlock: 0,
+    //             toBlock: "latest"
+    //         })
+    //         .then(events => {
+    //             console.log(events);
+    //         });
+    // }
+
+    // isValidSignature(signer, hash, v, r, s) {
+    //     return this.checkout.methods
+    //         .isValidSignature(signer, hash, v, r, s)
+    //         .call();
     // }
 
     // signAddToCartTransaction(DIN, account, privateKey) {
