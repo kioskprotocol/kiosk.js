@@ -3,6 +3,7 @@ var DINRegistryContract = require("../contracts/build/contracts/DINRegistry.json
 var ResolverContract = require("../contracts/build/contracts/StandardResolver.json");
 var CheckoutContract = require("../contracts/build/contracts/Checkout.json");
 var CartContract = require("../contracts/build/contracts/Cart.json");
+var Promise = require("bluebird");
 
 class Kiosk {
     constructor(web3) {
@@ -52,20 +53,24 @@ class Kiosk {
 
     getCart(buyer) {
         let DINs = [];
+
+        // const asyncEvent = Promise.promisifyAll(event);
+        // const logs = await asyncEvent.getAsync();
+
         return this.cart.deployed().then(instance => {
-            instance
-                .AddToCart(
+            const event = Promise.promisifyAll(
+                instance.AddToCart(
                     { buyer: buyer },
                     { fromBlock: 0, toBlock: "latest" }
                 )
-                .get((error, results) => {
-                    for (let i = 0; i < results.length; i++) {
-                        const DIN = results[i].args.DIN.c[0];
-                        DINs.push(DIN);
-                    }
-                });
-        }).then(() => {
-            return DINs;
+            );
+            return event.getAsync().then(results => {
+                for (let i = 0; i < results.length; i++) {
+                    const DIN = results[i]["args"]["DIN"]["c"][0];
+                    DINs.push(DIN);
+                }
+                return DINs;
+            });
         });
     }
 
