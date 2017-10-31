@@ -1,4 +1,3 @@
-var contracts = new (require("./contracts.js"))();
 var contract = require("truffle-contract");
 var DINRegistryContract = require("../contracts/build/contracts/DINRegistry.json");
 var ResolverContract = require("../contracts/build/contracts/StandardResolver.json");
