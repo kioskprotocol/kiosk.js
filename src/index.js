@@ -1,8 +1,8 @@
 var contract = require("truffle-contract");
-var DINRegistryContract = require("../contracts/DINRegistry.json");
-var ResolverContract = require("../contracts/StandardResolver.json");
-var CheckoutContract = require("../contracts/Checkout.json");
-var CartContract = require("../contracts/Cart.json");
+var DINRegistryContract = require("../contracts/build/contracts/DINRegistry.json");
+var ResolverContract = require("../contracts/build/contracts/StandardResolver.json");
+var CheckoutContract = require("../contracts/build/contracts/Checkout.json");
+var CartContract = require("../contracts/build/contracts/Cart.json");
 
 class Kiosk {
     constructor(web3) {
