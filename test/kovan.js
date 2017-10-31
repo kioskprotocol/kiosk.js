@@ -12,8 +12,6 @@ describe("kovan", () => {
     let buyer;
     let seller; // Owner of DIN 1000000001 on Kovan
 
-    let isWeb3Beta = false;
-
     // Product
     const DIN = 1000000011;
     const quantity = 1;
@@ -30,17 +28,15 @@ describe("kovan", () => {
     let signature;
 
     before(async () => {
-        kiosk = new Kiosk(process.env.INFURA_KOVAN);
-        web3 = kiosk.web3;
+        web3 = new Web3(
+            new Web3.providers.HttpProvider("http://localhost:8545")
+        );
+        kiosk = new Kiosk(web3);
 
-        // Version 1.X
-        if (typeof web3.version === "string") {
-            isWeb3Beta = true;
-            web3.eth.accounts.wallet.add(process.env.BUYER_PRIVATE_KEY);
-            web3.eth.accounts.wallet.add(process.env.SELLER_PRIVATE_KEY);
-            buyer = web3.eth.accounts.wallet[0];
-            seller = web3.eth.accounts.wallet[1];
-        }
+        // web3.eth.accounts.wallet.add(process.env.BUYER_PRIVATE_KEY);
+        // web3.eth.accounts.wallet.add(process.env.SELLER_PRIVATE_KEY);
+        // buyer = web3.eth.accounts.wallet[0];
+        // seller = web3.eth.accounts.wallet[1];
     });
 
     it("should return the correct owner of a DIN", async () => {
