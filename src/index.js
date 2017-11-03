@@ -3,7 +3,6 @@ var DINRegistryContract = require("../contracts/build/contracts/DINRegistry.json
 var ResolverContract = require("../contracts/build/contracts/StandardResolver.json");
 var CheckoutContract = require("../contracts/build/contracts/Checkout.json");
 var CartContract = require("../contracts/build/contracts/Cart.json");
-var Promise = require("bluebird");
 
 class Kiosk {
     constructor(web3) {
@@ -52,22 +51,33 @@ class Kiosk {
     }
 
     getCart(buyer) {
-        let DINs = [];
-        return this.cart.deployed().then(instance => {
-            const event = Promise.promisifyAll(
-                instance.AddToCart(
-                    { buyer: buyer },
-                    { fromBlock: 0, toBlock: "latest" }
-                )
-            );
-            return event.getAsync().then(results => {
-                for (let i = 0; i < results.length; i++) {
-                    const DIN = results[i]["args"]["DIN"]["c"][0];
+        var DINs = [];
+        var address = CartContract["networks"]["42"]["address"];
+        var cart = new this.web3.eth.Contract(CartContract.abi, address);
+        return cart.getPastEvents("AddToCart", {
+            filter: {},
+            fromBlock: 0,
+            toBlock: "latest"
+        }).then(results => {
+            for (let i = 0; i < results.length; i++) {
+                var result = results[i];
+                var DIN = result.returnValues.DIN;
+                if (DINs.includes(DIN) === false) {
                     DINs.push(DIN);
                 }
-                return DINs;
-            });
+            }
+            return DINs;
         });
+    }
+
+    getOrders(buyer) {
+        var address = CheckoutContract["networks"]["42"]["address"];
+        var checkout = new this.web3.eth.Contract(CheckoutContract.abi, address);
+        return checkout.getPastEvents("NewOrder", {
+            filter: {},
+            fromBlock: 0,
+            toBlock: "latest"
+        })
     }
 
     buy(
@@ -121,7 +131,6 @@ class Kiosk {
     //         .isValidSignature(signer, hash, v, r, s)
     //         .call();
     // }
-
 }
 
 module.exports = Kiosk;
