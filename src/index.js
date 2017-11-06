@@ -98,7 +98,6 @@ class Kiosk {
                         priceCurrency: result.priceCurrency,
                         timestamp: result.timestamp
                     };
-                    console.log(order);
                     orders.unshift(order);
                 }
                 return orders;
