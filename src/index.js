@@ -1,4 +1,3 @@
-var contract = require("truffle-contract");
 var DINRegistryContract = require("../contracts/build/contracts/DINRegistry.json");
 var ResolverContract = require("../contracts/build/contracts/StandardResolver.json");
 var CheckoutContract = require("../contracts/build/contracts/Checkout.json");
@@ -8,45 +7,47 @@ class Kiosk {
     constructor(web3) {
         this.web3 = web3;
 
-        this.registry = contract(DINRegistryContract);
-        this.registry.setProvider(this.web3.currentProvider);
+        var registryAddress = DINRegistryContract["networks"]["42"]["address"];
+        this.registry = new this.web3.eth.Contract(
+            DINRegistryContract.abi,
+            registryAddress
+        );
 
-        this.checkout = contract(CheckoutContract);
-        this.checkout.setProvider(this.web3.currentProvider);
+        var checkoutAddress = CheckoutContract["networks"]["42"]["address"];
+        this.checkout = new this.web3.eth.Contract(
+            CheckoutContract.abi,
+            checkoutAddress
+        );
 
-        this.cart = contract(CartContract);
-        this.cart.setProvider(this.web3.currentProvider);
+        var cartAddress = CartContract["networks"]["42"]["address"];
+        this.cart = new this.web3.eth.Contract(CartContract.abi, cartAddress);
     }
 
     owner(DIN) {
-        return this.registry.deployed().then(instance => {
-            return instance.owner(DIN);
-        });
+        return this.registry.methods.owner(DIN).call();
     }
 
     resolver(DIN) {
-        return this.registry.deployed().then(instance => {
-            return instance.resolver(DIN);
-        });
+        return this.registry.methods.resolver(DIN).call();
     }
 
     productURL(DIN) {
         return this.resolver(DIN).then(resolverAddr => {
-            const resolver = contract(ResolverContract);
-            resolver.setProvider(this.web3.currentProvider);
-            return resolver.at(resolverAddr).then(instance => {
-                return instance.productURL(DIN);
-            });
+            const resolver = new this.web3.eth.Contract(
+                ResolverContract.abi,
+                resolverAddr
+            );
+            return resolver.methods.productURL(DIN).call();
         });
     }
 
     merchant(DIN) {
         return this.resolver(DIN).then(resolverAddr => {
-            const resolver = contract(ResolverContract);
-            resolver.setProvider(this.web3.currentProvider);
-            return resolver.at(resolverAddr).then(instance => {
-                return instance.merchant(DIN);
-            });
+            const resolver = new this.web3.eth.Contract(
+                ResolverContract.abi,
+                resolverAddr
+            );
+            return resolver.methods.merchant(DIN).call();
         });
     }
 
@@ -149,12 +150,10 @@ class Kiosk {
             // If paying in Ether, we need to set the value
             value = totalPrice;
         }
-        return this.checkout.deployed().then(instance => {
-            return instance.buy(orderValues, orderAddresses, v, r, s, {
-                from: account,
-                value: value,
-                gasPrice: this.web3.utils.toWei(20, "gwei")
-            });
+        return this.checkout.methods.buy(orderValues, orderAddresses, v, r, s).send({
+            from: account,
+            value: value,
+            gasPrice: this.web3.utils.toWei(20, "gwei")
         });
     }
 
