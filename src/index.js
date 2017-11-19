@@ -152,8 +152,7 @@ class Kiosk {
         }
         return this.checkout.methods.buy(orderValues, orderAddresses, v, r, s).send({
             from: account,
-            value: value,
-            gasPrice: this.web3.utils.toWei(20, "gwei")
+            value: value
         });
     }
 
