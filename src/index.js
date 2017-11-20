@@ -7,19 +7,21 @@ class Kiosk {
     constructor(web3) {
         this.web3 = web3;
 
-        var registryAddress = DINRegistryContract["networks"]["42"]["address"];
+        const networkId = "4447";
+
+        var registryAddress =
+            DINRegistryContract["networks"][networkId]["address"];
         this.registry = new this.web3.eth.Contract(
             DINRegistryContract.abi,
             registryAddress
         );
-
-        var checkoutAddress = CheckoutContract["networks"]["42"]["address"];
+        var checkoutAddress =
+            CheckoutContract["networks"][networkId]["address"];
         this.checkout = new this.web3.eth.Contract(
             CheckoutContract.abi,
             checkoutAddress
         );
-
-        var cartAddress = CartContract["networks"]["42"]["address"];
+        var cartAddress = CartContract["networks"][networkId]["address"];
         this.cart = new this.web3.eth.Contract(CartContract.abi, cartAddress);
     }
 
@@ -51,87 +53,63 @@ class Kiosk {
         });
     }
 
-    getCart(buyer) {
-        var DINs = [];
-        var address = CartContract["networks"]["42"]["address"];
-        var cart = new this.web3.eth.Contract(CartContract.abi, address);
-        return cart
-            .getPastEvents("AddToCart", {
-                filter: { buyer: buyer },
-                fromBlock: 0,
-                toBlock: "latest"
-            })
-            .then(results => {
-                for (let i = 0; i < results.length; i++) {
-                    var result = results[i];
-                    var DIN = result.returnValues.DIN;
-                    if (DINs.includes(DIN) === false) {
-                        DINs.push(DIN);
-                    }
-                }
-                return DINs;
-            });
+    nonceHash(nonce) {
+        return this.web3.utils.sha3(nonce);
     }
 
-    getOrders(buyer) {
-        var orders = [];
-        var address = CheckoutContract["networks"]["42"]["address"];
-        var checkout = new this.web3.eth.Contract(
-            CheckoutContract.abi,
-            address
+    signPriceMessage(
+        DIN,
+        price,
+        priceValidUntil,
+        affiliateReward,
+        loyaltyReward,
+        loyaltyToken,
+        account
+    ) {
+        const hash = this.web3.utils.soliditySha3(
+            DIN,
+            price,
+            priceValidUntil,
+            affiliateReward,
+            loyaltyReward,
+            loyaltyToken
         );
-        return checkout
-            .getPastEvents("NewOrder", {
-                filter: { buyer: buyer },
-                fromBlock: 0,
-                toBlock: "latest"
-            })
-            .then(results => {
-                for (let i = 0; i < results.length; i++) {
-                    var result = results[i].returnValues;
-                    var order = {
-                        orderID: result.orderID,
-                        buyer: result.buyer,
-                        merchant: result.merchant,
-                        DIN: result.DIN,
-                        quantity: result.quantity,
-                        totalPrice: result.totalPrice,
-                        priceCurrency: result.priceCurrency,
-                        timestamp: result.timestamp
-                    };
-                    orders.unshift(order);
-                }
-                return orders;
-            });
-    }
+        return this.web3.eth.sign(hash, account).then(signedMessage => {
+            // https://ethereum.stackexchange.com/questions/1777/workflow-on-signing-a-string-with-private-key-followed-by-signature-verificatio/1794#1794
+            const v = "0x" + signedMessage.slice(130, 132);
+            const r = signedMessage.slice(0, 66);
+            const s = "0x" + signedMessage.slice(66, 130);
 
-    formattedPrice(price, priceCurrency) {
-        let decimals;
-        let symbol;
-        switch (priceCurrency) {
-            case "0x0000000000000000000000000000000000000000":
-                decimals = 18;
-                symbol = "ETH";
-                break;
-            default:
-                decimals = 18;
-                symbol = "MARK";
-            // TODO: Add ERC20 support
-        }
+            const signature = {
+                v: this.web3.utils.toDecimal(v) + 27,
+                r: r,
+                s: s
+            };
 
-        let tokenPrice = parseInt(price) / Math.pow(10, decimals);
-        let formattedPrice = tokenPrice.toFixed(3);
-        return formattedPrice.toString() + " " + symbol;
+            // return this.isValidSignature(
+            //     account,
+            //     hash,
+            //     signature.v,
+            //     signature.r,
+            //     signature.s
+            // ).then(valid => {
+            //     console.log(valid);
+            // });
+
+            return signature;
+        });
     }
 
     buy(
         DIN,
         quantity,
         totalPrice,
-        priceCurrency,
         priceValidUntil,
-        affiliateFee,
+        affiliateReward,
+        loyaltyReward,
         affiliate,
+        loyaltyToken,
+        nonceHash,
         v,
         r,
         s,
@@ -142,19 +120,77 @@ class Kiosk {
             quantity,
             totalPrice,
             priceValidUntil,
-            affiliateFee
+            affiliateReward,
+            loyaltyReward
         ];
-        const orderAddresses = [priceCurrency, affiliate];
-        let value = 0;
-        if (priceCurrency === "0x0000000000000000000000000000000000000000") {
-            // If paying in Ether, we need to set the value
-            value = totalPrice;
-        }
-        return this.checkout.methods.buy(orderValues, orderAddresses, v, r, s).send({
-            from: account,
-            value: value
-        });
+        const orderAddresses = [affiliate, loyaltyToken];
+        return this.checkout.methods
+            .buy(orderValues, orderAddresses, nonceHash, v, r, s)
+            .send({
+                from: account,
+                value: totalPrice
+            });
     }
+
+    isValidSignature(signer, hash, v, r, s) {
+        return this.checkout.methods
+            .isValidSignature(signer, hash, v, r, s)
+            .call();
+    }
+
+    // getCart(buyer) {
+    //     var DINs = [];
+    //     var address = CartContract["networks"]["42"]["address"];
+    //     var cart = new this.web3.eth.Contract(CartContract.abi, address);
+    //     return cart
+    //         .getPastEvents("AddToCart", {
+    //             filter: { buyer: buyer },
+    //             fromBlock: 0,
+    //             toBlock: "latest"
+    //         })
+    //         .then(results => {
+    //             for (let i = 0; i < results.length; i++) {
+    //                 var result = results[i];
+    //                 var DIN = result.returnValues.DIN;
+    //                 if (DINs.includes(DIN) === false) {
+    //                     DINs.push(DIN);
+    //                 }
+    //             }
+    //             return DINs;
+    //         });
+    // }
+
+    // getOrders(buyer) {
+    //     var orders = [];
+    //     var address = CheckoutContract["networks"]["42"]["address"];
+    //     var checkout = new this.web3.eth.Contract(
+    //         CheckoutContract.abi,
+    //         address
+    //     );
+    //     return checkout
+    //         .getPastEvents("NewOrder", {
+    //             filter: { buyer: buyer },
+    //             fromBlock: 0,
+    //             toBlock: "latest"
+    //         })
+    //         .then(results => {
+    //             for (let i = 0; i < results.length; i++) {
+    //                 var result = results[i].returnValues;
+    //                 var order = {
+    //                     orderID: result.orderID,
+    //                     buyer: result.buyer,
+    //                     merchant: result.merchant,
+    //                     DIN: result.DIN,
+    //                     quantity: result.quantity,
+    //                     totalPrice: result.totalPrice,
+    //                     priceCurrency: result.priceCurrency,
+    //                     timestamp: result.timestamp
+    //                 };
+    //                 orders.unshift(order);
+    //             }
+    //             return orders;
+    //         });
+    // }
 
     // getOrder(orderID) {
     //     return this.checkout
@@ -166,12 +202,6 @@ class Kiosk {
     //         .then(events => {
     //             console.log(events);
     //         });
-    // }
-
-    // isValidSignature(signer, hash, v, r, s) {
-    //     return this.checkout.methods
-    //         .isValidSignature(signer, hash, v, r, s)
-    //         .call();
     // }
 }
 
