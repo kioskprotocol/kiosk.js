@@ -2,6 +2,7 @@ var DINRegistryContract = require("../contracts/build/contracts/DINRegistry.json
 var ResolverContract = require("../contracts/build/contracts/StandardResolver.json");
 var CheckoutContract = require("../contracts/build/contracts/Checkout.json");
 var CartContract = require("../contracts/build/contracts/Cart.json");
+var MarketTokenContract = require("../contracts/build/contracts/MarketToken.json");
 
 class Kiosk {
     constructor(web3) {
@@ -23,6 +24,9 @@ class Kiosk {
         );
         var cartAddress = CartContract["networks"][networkId]["address"];
         this.cart = new this.web3.eth.Contract(CartContract.abi, cartAddress);
+
+        var marketTokenAddress = MarketTokenContract["networks"][networkId]["address"];
+        this.marketToken = new this.web3.eth.Contract(MarketTokenContract.abi, marketTokenAddress);
     }
 
     owner(DIN) {
@@ -86,16 +90,6 @@ class Kiosk {
                 s: s
             };
 
-            // return this.isValidSignature(
-            //     account,
-            //     hash,
-            //     signature.v,
-            //     signature.r,
-            //     signature.s
-            // ).then(valid => {
-            //     console.log(valid);
-            // });
-
             return signature;
         });
     }
@@ -136,6 +130,13 @@ class Kiosk {
         return this.checkout.methods
             .isValidSignature(signer, hash, v, r, s)
             .call();
+    }
+
+    getBalance(account, tokenAddr) {
+        if (!tokenAddr) {
+            return this.web3.eth.getBalance(account);
+        }
+        return 0;
     }
 
     // getCart(buyer) {
