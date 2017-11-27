@@ -146,6 +146,8 @@ class Kiosk {
                 } else {
                     return false;
                 }
+            }).catch(error => {
+                return false;
             });
     }
 }

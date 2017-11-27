@@ -13,7 +13,9 @@
   "directories": {
     "test": "test"
   },
-  "dependencies": {},
+  "dependencies": {
+    "web3": "^1.0.0-beta.26"
+  },
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-preset-es2015": "^6.24.1",
@@ -27,7 +29,6 @@
     "mocha": "^3.5.3",
     "request": "^2.83.0",
     "solc": "^0.4.17",
-    "web3": "^1.0.0-beta.26",
     "zeppelin-solidity": "^1.3.0"
   }
 }
