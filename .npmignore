@@ -1,7 +1,4 @@
 src
-build
-contracts
-!contracts/build
 migrations
 node_modules
 test
