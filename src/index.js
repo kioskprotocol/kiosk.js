@@ -1,8 +1,7 @@
 var DINRegistryContract = require("../contracts/build/contracts/DINRegistry.json");
 var ResolverContract = require("../contracts/build/contracts/StandardResolver.json");
 var CheckoutContract = require("../contracts/build/contracts/Checkout.json");
-var CartContract = require("../contracts/build/contracts/Cart.json");
-var MarketTokenContract = require("../contracts/build/contracts/MarketToken.json");
+var OrdersContract = require("../contracts/build/contracts/Orders.json");
 
 class Kiosk {
     constructor(web3) {
@@ -22,11 +21,11 @@ class Kiosk {
             CheckoutContract.abi,
             checkoutAddress
         );
-        var cartAddress = CartContract["networks"][networkId]["address"];
-        this.cart = new this.web3.eth.Contract(CartContract.abi, cartAddress);
-
-        var marketTokenAddress = MarketTokenContract["networks"][networkId]["address"];
-        this.marketToken = new this.web3.eth.Contract(MarketTokenContract.abi, marketTokenAddress);
+        var ordersAddress = OrdersContract["networks"][networkId]["address"];
+        this.orders = new this.web3.eth.Contract(
+            OrdersContract.abi,
+            ordersAddress
+        );
     }
 
     owner(DIN) {
@@ -57,7 +56,7 @@ class Kiosk {
         });
     }
 
-    nonceHash(nonce) {
+    hash(nonce) {
         return this.web3.utils.sha3(nonce);
     }
 
@@ -132,78 +131,26 @@ class Kiosk {
             .call();
     }
 
-    getBalance(account, tokenAddr) {
-        if (!tokenAddr) {
-            return this.web3.eth.getBalance(account);
-        }
-        return 0;
+    isValidOrder(orderID, nonce, merchant) {
+        return this.orders
+            .getPastEvents("NewOrder", {
+                filter: { orderID: orderID },
+                fromBlock: 0,
+                toBlock: "latest"
+            })
+            .then(events => {
+                if (events.length > 0) {
+                    const log = events[0].returnValues;
+                    const nonceHash = log.nonceHash;
+                    if (nonceHash === this.hash(nonce) && merchant === log.merchant) {
+                        return true;
+                    }
+                    return false;
+                } else {
+                    return false;
+                }
+            });
     }
-
-    // getCart(buyer) {
-    //     var DINs = [];
-    //     var address = CartContract["networks"]["42"]["address"];
-    //     var cart = new this.web3.eth.Contract(CartContract.abi, address);
-    //     return cart
-    //         .getPastEvents("AddToCart", {
-    //             filter: { buyer: buyer },
-    //             fromBlock: 0,
-    //             toBlock: "latest"
-    //         })
-    //         .then(results => {
-    //             for (let i = 0; i < results.length; i++) {
-    //                 var result = results[i];
-    //                 var DIN = result.returnValues.DIN;
-    //                 if (DINs.includes(DIN) === false) {
-    //                     DINs.push(DIN);
-    //                 }
-    //             }
-    //             return DINs;
-    //         });
-    // }
-
-    // getOrders(buyer) {
-    //     var orders = [];
-    //     var address = CheckoutContract["networks"]["42"]["address"];
-    //     var checkout = new this.web3.eth.Contract(
-    //         CheckoutContract.abi,
-    //         address
-    //     );
-    //     return checkout
-    //         .getPastEvents("NewOrder", {
-    //             filter: { buyer: buyer },
-    //             fromBlock: 0,
-    //             toBlock: "latest"
-    //         })
-    //         .then(results => {
-    //             for (let i = 0; i < results.length; i++) {
-    //                 var result = results[i].returnValues;
-    //                 var order = {
-    //                     orderID: result.orderID,
-    //                     buyer: result.buyer,
-    //                     merchant: result.merchant,
-    //                     DIN: result.DIN,
-    //                     quantity: result.quantity,
-    //                     totalPrice: result.totalPrice,
-    //                     priceCurrency: result.priceCurrency,
-    //                     timestamp: result.timestamp
-    //                 };
-    //                 orders.unshift(order);
-    //             }
-    //             return orders;
-    //         });
-    // }
-
-    // getOrder(orderID) {
-    //     return this.checkout
-    //         .getPastEvents("NewOrder", {
-    //             filter: { orderId: orderID },
-    //             fromBlock: 0,
-    //             toBlock: "latest"
-    //         })
-    //         .then(events => {
-    //             console.log(events);
-    //         });
-    // }
 }
 
 module.exports = Kiosk;
