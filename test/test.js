@@ -11,6 +11,7 @@ describe("test", () => {
     let kiosk;
     let buyer;
     let merchant;
+    const merchantPrivateKey = "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f";
 
     // Product
     const DIN = 1000000001;
@@ -31,7 +32,7 @@ describe("test", () => {
         web3 = new Web3(
             new Web3.providers.HttpProvider("http://localhost:9545")
         );
-        kiosk = new Kiosk(web3);
+        kiosk = new Kiosk(web3, "4447");
 
         const accounts = await web3.eth.getAccounts();
         buyer = accounts[0];
@@ -58,22 +59,22 @@ describe("test", () => {
             DIN,
             price,
             priceValidUntil,
-            0,
-            0,
-            "0x0000000000000000000000000000000000000000",
-            merchant
+            affiliateReward,
+            loyaltyReward,
+            loyaltyToken,
+            merchantPrivateKey
         );
         expect(signature).to.exist;
     });
 
     it("should validate a signature", async () => {
         const hash = web3.utils.soliditySha3(
-            { type: "uint256", value: DIN },
-            { type: "uint256", value: price },
-            { type: "uint256", value: priceValidUntil },
-            { type: "uint256", value: affiliateReward },
-            { type: "uint256", value: loyaltyReward },
-            { type: "address", value: loyaltyToken }
+            DIN,
+            price,
+            priceValidUntil,
+            affiliateReward,
+            loyaltyReward,
+            loyaltyToken
         );
         const valid = await kiosk.isValidSignature(
             merchant,
@@ -84,5 +85,4 @@ describe("test", () => {
         );
         expect(valid).to.equal(true);
     });
-
 });

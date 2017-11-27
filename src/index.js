@@ -67,7 +67,6 @@ class Kiosk {
         loyaltyToken,
         privateKey
     ) {
-        const account = this.web3.eth.accounts.privateKeyToAccount(privateKey);
         const hash = this.web3.utils.soliditySha3(
             { type: "uint256", value: DIN },
             { type: "uint256", value: price },
