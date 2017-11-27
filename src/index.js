@@ -2,31 +2,28 @@ var DINRegistryContract = require("../contracts/build/contracts/DINRegistry.json
 var ResolverContract = require("../contracts/build/contracts/StandardResolver.json");
 var CheckoutContract = require("../contracts/build/contracts/Checkout.json");
 var OrdersContract = require("../contracts/build/contracts/Orders.json");
+var Account = require("eth-lib/lib/account");
 
 class Kiosk {
-    constructor(web3) {
+    constructor(web3, networkId) {
         this.web3 = web3;
-
-        web3.eth.net.getId().then(networkId => {
-            var registryAddress =
-                DINRegistryContract["networks"][networkId]["address"];
-            this.registry = new this.web3.eth.Contract(
-                DINRegistryContract.abi,
-                registryAddress
-            );
-            var checkoutAddress =
-                CheckoutContract["networks"][networkId]["address"];
-            this.checkout = new this.web3.eth.Contract(
-                CheckoutContract.abi,
-                checkoutAddress
-            );
-            var ordersAddress =
-                OrdersContract["networks"][networkId]["address"];
-            this.orders = new this.web3.eth.Contract(
-                OrdersContract.abi,
-                ordersAddress
-            );
-        });
+        var registryAddress =
+            DINRegistryContract["networks"][networkId]["address"];
+        this.registry = new this.web3.eth.Contract(
+            DINRegistryContract.abi,
+            registryAddress
+        );
+        var checkoutAddress =
+            CheckoutContract["networks"][networkId]["address"];
+        this.checkout = new this.web3.eth.Contract(
+            CheckoutContract.abi,
+            checkoutAddress
+        );
+        var ordersAddress = OrdersContract["networks"][networkId]["address"];
+        this.orders = new this.web3.eth.Contract(
+            OrdersContract.abi,
+            ordersAddress
+        );
     }
 
     owner(DIN) {
@@ -68,30 +65,27 @@ class Kiosk {
         affiliateReward,
         loyaltyReward,
         loyaltyToken,
-        account
+        privateKey
     ) {
+        const account = this.web3.eth.accounts.privateKeyToAccount(privateKey);
         const hash = this.web3.utils.soliditySha3(
-            DIN,
-            price,
-            priceValidUntil,
-            affiliateReward,
-            loyaltyReward,
-            loyaltyToken
+            { type: "uint256", value: DIN },
+            { type: "uint256", value: price },
+            { type: "uint256", value: priceValidUntil },
+            { type: "uint256", value: affiliateReward },
+            { type: "uint256", value: loyaltyReward },
+            { type: "address", value: loyaltyToken }
         );
-        return this.web3.eth.sign(hash, account).then(signedMessage => {
-            // https://ethereum.stackexchange.com/questions/1777/workflow-on-signing-a-string-with-private-key-followed-by-signature-verificatio/1794#1794
-            const v = "0x" + signedMessage.slice(130, 132);
-            const r = signedMessage.slice(0, 66);
-            const s = "0x" + signedMessage.slice(66, 130);
-
-            const signature = {
-                v: this.web3.utils.toDecimal(v) + 27,
-                r: r,
-                s: s
-            };
-
-            return signature;
-        });
+        var prefix = "\x19Ethereum Signed Message:\n32";
+        var messageHash = this.web3.utils.soliditySha3(prefix, hash);
+        var signature = Account.sign(messageHash, privateKey);
+        var vrs = Account.decodeSignature(signature);
+        var v = vrs[0];
+        return {
+            v: this.web3.utils.toDecimal(v),
+            r: vrs[1],
+            s: vrs[2]
+        };
     }
 
     buy(
