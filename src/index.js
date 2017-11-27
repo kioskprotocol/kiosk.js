@@ -7,25 +7,26 @@ class Kiosk {
     constructor(web3) {
         this.web3 = web3;
 
-        const networkId = "4447";
-
-        var registryAddress =
-            DINRegistryContract["networks"][networkId]["address"];
-        this.registry = new this.web3.eth.Contract(
-            DINRegistryContract.abi,
-            registryAddress
-        );
-        var checkoutAddress =
-            CheckoutContract["networks"][networkId]["address"];
-        this.checkout = new this.web3.eth.Contract(
-            CheckoutContract.abi,
-            checkoutAddress
-        );
-        var ordersAddress = OrdersContract["networks"][networkId]["address"];
-        this.orders = new this.web3.eth.Contract(
-            OrdersContract.abi,
-            ordersAddress
-        );
+        web3.eth.net.getId().then(networkId => {
+            var registryAddress =
+                DINRegistryContract["networks"][networkId]["address"];
+            this.registry = new this.web3.eth.Contract(
+                DINRegistryContract.abi,
+                registryAddress
+            );
+            var checkoutAddress =
+                CheckoutContract["networks"][networkId]["address"];
+            this.checkout = new this.web3.eth.Contract(
+                CheckoutContract.abi,
+                checkoutAddress
+            );
+            var ordersAddress =
+                OrdersContract["networks"][networkId]["address"];
+            this.orders = new this.web3.eth.Contract(
+                OrdersContract.abi,
+                ordersAddress
+            );
+        });
     }
 
     owner(DIN) {
@@ -142,7 +143,10 @@ class Kiosk {
                 if (events.length > 0) {
                     const log = events[0].returnValues;
                     const nonceHash = log.nonceHash;
-                    if (nonceHash === this.hash(nonce) && merchant === log.merchant) {
+                    if (
+                        nonceHash === this.hash(nonce) &&
+                        merchant === log.merchant
+                    ) {
                         return true;
                     }
                     return false;
