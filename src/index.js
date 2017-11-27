@@ -133,12 +133,11 @@ class Kiosk {
                 toBlock: "latest"
             })
             .then(events => {
-                if (events.length > 0) {
+                if (events.length === 1) {
                     const log = events[0].returnValues;
-                    const nonceHash = log.nonceHash;
                     if (
-                        nonceHash === this.hash(nonce) &&
-                        merchant === log.merchant
+                        this.hash(nonce) === log.nonceHash &&
+                        merchant.toUpperCase() === log.merchant.toUpperCase() // Case insensitive compare
                     ) {
                         return true;
                     }
