@@ -1,6 +1,6 @@
 {
   "name": "kioskjs",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "Javascript library to interact with Kiosk protocol smart contracts",
   "main": "./dist/index.js",
   "scripts": {
