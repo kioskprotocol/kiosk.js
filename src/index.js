@@ -145,8 +145,23 @@ class Kiosk {
                 } else {
                     return false;
                 }
-            }).catch(error => {
+            })
+            .catch(error => {
                 return false;
+            });
+    }
+
+    getOrder(orderID) {
+        return this.orders
+            .getPastEvents("NewOrder", {
+                filter: { orderID: orderID },
+                fromBlock: 0,
+                toBlock: "latest"
+            })
+            .then(events => {
+                if (events.length === 1) {
+                    return events[0].returnValues;
+                }
             });
     }
 }
