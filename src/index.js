@@ -2,11 +2,14 @@ var DINRegistryContract = require("../contracts/build/contracts/DINRegistry.json
 var ResolverContract = require("../contracts/build/contracts/StandardResolver.json");
 var CheckoutContract = require("../contracts/build/contracts/Checkout.json");
 var OrdersContract = require("../contracts/build/contracts/Orders.json");
+var ERC20Contract = require("../contracts/build/contracts/ERC20.json");
+var LoyaltyTokenRegistryContract = require("../contracts/build/contracts/LoyaltyTokenRegistry.json");
 var Account = require("eth-lib/lib/account");
 
 class Kiosk {
     constructor(web3, networkId) {
         this.web3 = web3;
+        // Initialize contracts
         var registryAddress =
             DINRegistryContract["networks"][networkId]["address"];
         this.registry = new this.web3.eth.Contract(
@@ -23,6 +26,12 @@ class Kiosk {
         this.orders = new this.web3.eth.Contract(
             OrdersContract.abi,
             ordersAddress
+        );
+        var loyaltyRegistryAddress =
+            LoyaltyTokenRegistryContract["networks"][networkId]["address"];
+        this.loyaltyRegistry = new this.web3.eth.Contract(
+            LoyaltyTokenRegistryContract.abi,
+            loyaltyRegistryAddress
         );
     }
 
@@ -56,6 +65,27 @@ class Kiosk {
 
     hash(nonce) {
         return this.web3.utils.sha3(nonce);
+    }
+
+    getBalance(account, tokenAddress) {
+        const tokenContract = new this.web3.eth.Contract(
+            ERC20Contract.abi,
+            tokenAddress
+        );
+        return tokenContract.methods.balanceOf(account).call();
+    }
+
+    // Returns the last token deployed by a given merchant via the Loyalty Token Registry
+    getLoyaltyToken(merchant) {
+        return this.loyaltyRegistry
+            .getPastEvents("NewToken", {
+                filter: { merchant: merchant },
+                fromBlock: 0,
+                toBlock: "latest"
+            })
+            .then(events => {
+                return events[events.length - 1].returnValues.token;
+            });
     }
 
     signPriceMessage(
