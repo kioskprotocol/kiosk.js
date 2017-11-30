@@ -92,6 +92,7 @@ class Kiosk {
         DIN,
         price,
         priceValidUntil,
+        merchant,
         affiliateReward,
         loyaltyReward,
         loyaltyToken,
@@ -101,6 +102,7 @@ class Kiosk {
             { type: "uint256", value: DIN },
             { type: "uint256", value: price },
             { type: "uint256", value: priceValidUntil },
+            { type: "address", value: merchant },
             { type: "uint256", value: affiliateReward },
             { type: "uint256", value: loyaltyReward },
             { type: "address", value: loyaltyToken }
@@ -124,6 +126,7 @@ class Kiosk {
         priceValidUntil,
         affiliateReward,
         loyaltyReward,
+        merchant,
         affiliate,
         loyaltyToken,
         nonceHash,
@@ -140,7 +143,7 @@ class Kiosk {
             affiliateReward,
             loyaltyReward
         ];
-        const orderAddresses = [affiliate, loyaltyToken];
+        const orderAddresses = [merchant, affiliate, loyaltyToken];
         return this.checkout.methods
             .buy(orderValues, orderAddresses, nonceHash, v, r, s)
             .send({
@@ -179,6 +182,10 @@ class Kiosk {
             .catch(error => {
                 return false;
             });
+    }
+
+    isValidLoyaltyToken(tokenAddress) {
+        return this.loyaltyRegistry.methods.whitelist(tokenAddress).call();
     }
 
     getOrder(orderID) {
