@@ -9,7 +9,15 @@ var Account = require("eth-lib/lib/account");
 
 class Kiosk {
     constructor(web3, networkId) {
+        // Truffle
+        const supportedNetworkIds = [4447];
+
+        if (supportedNetworkIds.includes(networkId) === false) {
+            return null;
+        }
+
         this.web3 = web3;
+
         // Initialize contracts
         var registryAddress =
             DINRegistryContract["networks"][networkId]["address"];
