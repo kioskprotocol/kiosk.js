@@ -10,7 +10,7 @@ var Account = require("eth-lib/lib/account");
 class Kiosk {
     constructor(web3, networkId) {
         // Truffle
-        const supportedNetworkIds = [4447];
+        const supportedNetworkIds = ["4447"];
 
         if (supportedNetworkIds.includes(networkId) === false) {
             return null;
