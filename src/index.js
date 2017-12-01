@@ -4,6 +4,7 @@ var CheckoutContract = require("../contracts/build/contracts/Checkout.json");
 var OrdersContract = require("../contracts/build/contracts/Orders.json");
 var ERC20Contract = require("../contracts/build/contracts/ERC20.json");
 var LoyaltyTokenRegistryContract = require("../contracts/build/contracts/LoyaltyTokenRegistry.json");
+var MarketTokenContract = require("../contracts/build/contracts/MarketToken.json");
 var Account = require("eth-lib/lib/account");
 
 class Kiosk {
@@ -32,6 +33,12 @@ class Kiosk {
         this.loyaltyRegistry = new this.web3.eth.Contract(
             LoyaltyTokenRegistryContract.abi,
             loyaltyRegistryAddress
+        );
+        var marketTokenAddress =
+            MarketTokenContract["networks"][networkId]["address"];
+        this.marketToken = new this.web3.eth.Contract(
+            MarketTokenContract.abi,
+            marketTokenAddress
         );
     }
 
@@ -67,7 +74,15 @@ class Kiosk {
         return this.web3.utils.sha3(nonce);
     }
 
-    getBalance(account, tokenAddress) {
+    getETHBalance(account) {
+        return this.web3.eth.getBalance(account);
+    }
+
+    getMARKBalance(account) {
+        return this.marketToken.methods.balanceOf(account).call();
+    }
+
+    getERC20Balance(account, tokenAddress) {
         const tokenContract = new this.web3.eth.Contract(
             ERC20Contract.abi,
             tokenAddress
@@ -88,24 +103,15 @@ class Kiosk {
             });
     }
 
-    signPriceMessage(
-        DIN,
-        price,
-        priceValidUntil,
-        merchant,
-        affiliateReward,
-        loyaltyReward,
-        loyaltyToken,
-        privateKey
-    ) {
+    signPriceMessage(product, privateKey) {
         const hash = this.web3.utils.soliditySha3(
-            { type: "uint256", value: DIN },
-            { type: "uint256", value: price },
-            { type: "uint256", value: priceValidUntil },
-            { type: "address", value: merchant },
-            { type: "uint256", value: affiliateReward },
-            { type: "uint256", value: loyaltyReward },
-            { type: "address", value: loyaltyToken }
+            { type: "uint256", value: product.DIN },
+            { type: "uint256", value: product.price },
+            { type: "uint256", value: product.priceValidUntil },
+            { type: "address", value: product.merchant },
+            { type: "uint256", value: product.affiliateReward },
+            { type: "uint256", value: product.loyaltyReward },
+            { type: "address", value: product.loyaltyToken }
         );
         var prefix = "\x19Ethereum Signed Message:\n32";
         var messageHash = this.web3.utils.soliditySha3(prefix, hash);
@@ -119,37 +125,44 @@ class Kiosk {
         };
     }
 
-    buy(
-        DIN,
-        quantity,
-        totalPrice,
-        priceValidUntil,
-        affiliateReward,
-        loyaltyReward,
-        merchant,
-        affiliate,
-        loyaltyToken,
-        nonceHash,
-        v,
-        r,
-        s,
-        account
-    ) {
+    buy(order, loyaltyAmount, nonceHash, signature, account) {
         const orderValues = [
-            DIN,
-            quantity,
-            totalPrice,
-            priceValidUntil,
-            affiliateReward,
-            loyaltyReward
+            order.DIN,
+            order.quantity,
+            order.totalPrice,
+            order.priceValidUntil,
+            order.affiliateReward,
+            order.loyaltyReward
         ];
-        const orderAddresses = [merchant, affiliate, loyaltyToken];
-        return this.checkout.methods
-            .buy(orderValues, orderAddresses, nonceHash, v, r, s)
-            .send({
-                from: account,
-                value: totalPrice
-            });
+        const orderAddresses = [
+            order.merchant,
+            order.affiliate,
+            order.loyaltyToken
+        ];
+        const value = Math.max(order.totalPrice - loyaltyAmount, 0);
+        return new Promise((resolve, reject) => {
+            this.checkout.methods
+                .buy(
+                    orderValues,
+                    orderAddresses,
+                    nonceHash,
+                    signature.v,
+                    signature.r,
+                    signature.s
+                )
+                .send({
+                    from: account,
+                    value: value,
+                    gas: 1000000,
+                    gasPrice: this.web3.utils.toWei("1", "gwei")
+                })
+                .on("receipt", receipt => {
+                    resolve(receipt);
+                })
+                .on("error", err => {
+                    reject(err);
+                });
+        });
     }
 
     isValidSignature(signer, hash, v, r, s) {
