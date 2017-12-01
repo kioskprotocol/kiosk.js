@@ -125,7 +125,7 @@ class Kiosk {
         };
     }
 
-    buy(order, nonceHash, signature, account) {
+    buy(order, loyaltyAmount, nonceHash, signature, account) {
         const orderValues = [
             order.DIN,
             order.quantity,
@@ -139,19 +139,30 @@ class Kiosk {
             order.affiliate,
             order.loyaltyToken
         ];
-        return this.checkout.methods
-            .buy(
-                orderValues,
-                orderAddresses,
-                nonceHash,
-                signature.v,
-                signature.r,
-                signature.s
-            )
-            .send({
-                from: account,
-                value: order.totalPrice
-            });
+        const value = Math.max(order.totalPrice - loyaltyAmount, 0);
+        return new Promise((resolve, reject) => {
+            this.checkout.methods
+                .buy(
+                    orderValues,
+                    orderAddresses,
+                    nonceHash,
+                    signature.v,
+                    signature.r,
+                    signature.s
+                )
+                .send({
+                    from: account,
+                    value: value,
+                    gas: 1000000,
+                    gasPrice: this.web3.utils.toWei("1", "gwei")
+                })
+                .on("receipt", receipt => {
+                    resolve(receipt);
+                })
+                .on("error", err => {
+                    reject(err);
+                });
+        });
     }
 
     isValidSignature(signer, hash, v, r, s) {
