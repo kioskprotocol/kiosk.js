@@ -9,10 +9,10 @@ var Account = require("eth-lib/lib/account");
 
 class Kiosk {
     constructor(web3, networkId) {
-        // Truffle
-        const supportedNetworkIds = ["4447"];
+        // Local and Kovan
+        const supportedNetworkIds = ["4447", "42"];
 
-        if (supportedNetworkIds.includes(networkId) === false) {
+        if (supportedNetworkIds.includes(networkId.toString()) === false) {
             return null;
         }
 
@@ -107,7 +107,10 @@ class Kiosk {
                 toBlock: "latest"
             })
             .then(events => {
-                return events[events.length - 1].returnValues.token;
+                if (events.length > 0) {
+                    return events[events.length - 1].returnValues.token;
+                }
+                return null;
             });
     }
 
@@ -133,7 +136,48 @@ class Kiosk {
         };
     }
 
-    buy(order, loyaltyAmount, nonceHash, signature, account) {
+    // This is the method to use
+    executeBuy(order, loyaltyAmount, nonceHash, signature, account) {
+        return new Promise((resolve, reject) => {
+            this.buy(
+                order,
+                loyaltyAmount,
+                nonceHash,
+                signature,
+                account,
+                false
+            ).then(result => {
+                if (result > 0) {
+                    // Execute the actual buy transaction
+                    this.buy(
+                        order,
+                        loyaltyAmount,
+                        nonceHash,
+                        signature,
+                        account,
+                        true
+                    )
+                        .then(result => {
+                            resolve(result);
+                        })
+                        .catch(error => {
+                            reject(error);
+                        });
+                } else {
+                    reject("There was an error when calling this transaction");
+                }
+            });
+        });
+    }
+
+    buy(
+        order,
+        loyaltyAmount,
+        nonceHash,
+        signature,
+        account,
+        isTransaction = false
+    ) {
         const orderValues = [
             order.DIN,
             order.quantity,
@@ -148,6 +192,32 @@ class Kiosk {
             order.loyaltyToken
         ];
         const value = Math.max(order.totalPrice - loyaltyAmount, 0);
+        const txParams = {
+            from: account,
+            value: value,
+            gas: 200000,
+            gasPrice: this.web3.utils.toWei("20", "gwei")
+        };
+        if (isTransaction === true) {
+            return this.sendBuy(
+                orderValues,
+                orderAddresses,
+                nonceHash,
+                signature,
+                txParams
+            );
+        } else {
+            return this.callBuy(
+                orderValues,
+                orderAddresses,
+                nonceHash,
+                signature,
+                txParams
+            );
+        }
+    }
+
+    sendBuy(orderValues, orderAddresses, nonceHash, signature, txParams) {
         return new Promise((resolve, reject) => {
             this.checkout.methods
                 .buy(
@@ -158,17 +228,34 @@ class Kiosk {
                     signature.r,
                     signature.s
                 )
-                .send({
-                    from: account,
-                    value: value,
-                    gas: 1000000,
-                    gasPrice: this.web3.utils.toWei("1", "gwei")
-                })
+                .send(txParams)
                 .on("receipt", receipt => {
                     resolve(receipt);
                 })
                 .on("error", err => {
                     reject(err);
+                });
+        });
+    }
+
+    // Dry run
+    callBuy(orderValues, orderAddresses, nonceHash, signature, txParams) {
+        return new Promise((resolve, reject) => {
+            this.checkout.methods
+                .buy(
+                    orderValues,
+                    orderAddresses,
+                    nonceHash,
+                    signature.v,
+                    signature.r,
+                    signature.s
+                )
+                .call(txParams, (error, result) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(result);
+                    }
                 });
         });
     }
