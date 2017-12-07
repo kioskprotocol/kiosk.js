@@ -5,7 +5,7 @@ var OrdersContract = require("../contracts/build/contracts/Orders.json");
 var ERC20Contract = require("../contracts/build/contracts/ERC20.json");
 var LoyaltyTokenRegistryContract = require("../contracts/build/contracts/LoyaltyTokenRegistry.json");
 var MarketTokenContract = require("../contracts/build/contracts/MarketToken.json");
-var Account = require("eth-lib/lib/account");
+var Account = require("web3-eth-accounts/node_modules/eth-lib/lib/account");
 
 class Kiosk {
     constructor(web3, networkId) {
