@@ -297,17 +297,29 @@ class Kiosk {
     }
 
     getOrder(orderID) {
-        return this.orders
-            .getPastEvents("NewOrder", {
-                filter: { orderID: orderID },
-                fromBlock: 0,
-                toBlock: "latest"
-            })
-            .then(events => {
-                if (events.length === 1) {
-                    return events[0].returnValues;
+        return new Promise((resolve, reject) => {
+            this.orders.getPastEvents(
+                "NewOrder",
+                {
+                    filter: { orderID: orderID },
+                    fromBlock: 0,
+                    toBlock: "latest"
+                },
+                function(error, events) {
+                    if (error) {
+                        reject(error);
+                    } else if (events.length === 1) {
+                        resolve(events[0].returnValues);
+                    } else {
+                        reject("No event for order ID: " + orderID);
+                    }
                 }
-            });
+            );
+        });
+    }
+
+    getOrderIndex() {
+        return this.orders.methods.orderIndex().call();
     }
 }
 
