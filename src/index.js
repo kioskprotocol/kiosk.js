@@ -9,8 +9,8 @@ var Account = require("eth-lib/lib/account");
 
 class Kiosk {
     constructor(web3, networkId) {
-        // Local and Kovan
-        const supportedNetworkIds = ["4447", "42"];
+        // Ganache (local) and Kovan
+        const supportedNetworkIds = ["5777", "42"];
 
         if (supportedNetworkIds.includes(networkId.toString()) === false) {
             return null;
@@ -178,85 +178,54 @@ class Kiosk {
         account,
         isTransaction = false
     ) {
-        const orderValues = [
-            order.DIN,
-            order.quantity,
-            order.totalPrice,
-            order.priceValidUntil,
-            order.affiliateReward,
-            order.loyaltyReward
-        ];
-        const orderAddresses = [
-            order.merchant,
-            order.affiliate,
-            order.loyaltyToken
-        ];
-        const value = Math.max(order.totalPrice - loyaltyAmount, 0);
-        const txParams = {
-            from: account,
-            value: value,
-            gas: 200000,
-            gasPrice: this.web3.utils.toWei("20", "gwei")
-        };
-        if (isTransaction === true) {
-            return this.sendBuy(
+        return new Promise((resolve, reject) => {
+            const orderValues = [
+                order.DIN,
+                order.quantity,
+                order.totalPrice,
+                order.priceValidUntil,
+                order.affiliateReward,
+                order.loyaltyReward
+            ];
+            const orderAddresses = [
+                order.merchant,
+                order.affiliate,
+                order.loyaltyToken
+            ];
+            const value = Math.max(order.totalPrice - loyaltyAmount, 0);
+            const txParams = {
+                from: account,
+                value: value,
+                gas: 200000,
+                gasPrice: this.web3.utils.toWei("20", "gwei")
+            };
+            const buy = this.checkout.methods.buy(
                 orderValues,
                 orderAddresses,
                 nonceHash,
-                signature,
-                txParams
+                signature.v,
+                signature.r,
+                signature.s
             );
-        } else {
-            return this.callBuy(
-                orderValues,
-                orderAddresses,
-                nonceHash,
-                signature,
-                txParams
-            );
-        }
-    }
-
-    sendBuy(orderValues, orderAddresses, nonceHash, signature, txParams) {
-        return new Promise((resolve, reject) => {
-            this.checkout.methods
-                .buy(
-                    orderValues,
-                    orderAddresses,
-                    nonceHash,
-                    signature.v,
-                    signature.r,
-                    signature.s
-                )
-                .send(txParams)
-                .on("receipt", receipt => {
-                    resolve(receipt);
-                })
-                .on("error", err => {
-                    reject(err);
-                });
-        });
-    }
-
-    // Dry run
-    callBuy(orderValues, orderAddresses, nonceHash, signature, txParams) {
-        return new Promise((resolve, reject) => {
-            this.checkout.methods
-                .buy(
-                    orderValues,
-                    orderAddresses,
-                    nonceHash,
-                    signature.v,
-                    signature.r,
-                    signature.s
-                )
-                .call(txParams, (error, result) => {
+            // Dry run
+            if (isTransaction === false) {
+                buy.call(txParams, (error, result) => {
                     if (error) {
                         reject(error);
                     } else {
                         resolve(result);
                     }
                 });
+            } else {
+                buy
+                    .send(txParams)
+                    .on("receipt", receipt => {
+                        resolve(receipt);
+                    })
+                    .on("error", err => {
+                        reject(err);
+                    });
+            }
         });
     }
 
@@ -266,55 +235,67 @@ class Kiosk {
             .call();
     }
 
-    isValidOrder(orderID, nonce, merchant) {
-        return this.orders
-            .getPastEvents("NewOrder", {
-                filter: { orderID: orderID },
-                fromBlock: 0,
-                toBlock: "latest"
-            })
-            .then(events => {
-                if (events.length === 1) {
-                    const log = events[0].returnValues;
-                    if (
-                        this.hash(nonce) === log.nonceHash &&
-                        merchant.toUpperCase() === log.merchant.toUpperCase() // Case insensitive compare
-                    ) {
-                        return true;
-                    }
-                    return false;
-                } else {
-                    return false;
-                }
-            })
-            .catch(error => {
-                return false;
-            });
-    }
-
     isValidLoyaltyToken(tokenAddress) {
         return this.loyaltyRegistry.methods.whitelist(tokenAddress).call();
     }
 
-    getOrder(orderID) {
+    getOrder(txHash) {
         return new Promise((resolve, reject) => {
-            this.orders.getPastEvents(
-                "NewOrder",
-                {
-                    filter: { orderID: orderID },
-                    fromBlock: 0,
-                    toBlock: "latest"
-                },
-                function(error, events) {
-                    if (error) {
-                        reject(error);
-                    } else if (events.length === 1) {
-                        resolve(events[0].returnValues);
-                    } else {
-                        reject("No event for order ID: " + orderID);
-                    }
+            this.web3.eth.getTransactionReceipt(txHash).then(result => {
+                const data = result.logs[0].data;
+                const params = this.web3.eth.abi.decodeParameters(
+                    [
+                        "bytes32",
+                        "address",
+                        "uint256",
+                        "uint256",
+                        "uint256",
+                        "uint256"
+                    ],
+                    data
+                );
+                const topics = result.logs[0].topics;
+                const orderID = this.web3.eth.abi.decodeParameter(
+                    "uint256",
+                    topics[1]
+                );
+                const buyer = this.web3.eth.abi.decodeParameter(
+                    "address",
+                    topics[2]
+                );
+                const merchant = this.web3.eth.abi.decodeParameter(
+                    "address",
+                    topics[3]
+                );
+                const order = {
+                    orderID: orderID,
+                    nonceHash: params["0"],
+                    checkout: params["1"],
+                    buyer: buyer,
+                    merchant: merchant,
+                    DIN: params["2"],
+                    quantity: params["3"],
+                    totalPrice: params["4"],
+                    timestamp: params["5"]
+                };
+                resolve(order);
+            });
+        });
+    }
+
+    isValidOrder(txHash, nonce, merchant) {
+        return new Promise(resolve => {
+            this.getOrder(txHash).then(order => {
+                const nonceHash = this.hash(nonce);
+                if (
+                    order.nonceHash === nonceHash &&
+                    order.merchant === merchant
+                ) {
+                    resolve(true);
+                } else {
+                    resolve(false);
                 }
-            );
+            });
         });
     }
 
