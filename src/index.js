@@ -9,8 +9,8 @@ var Account = require("eth-lib/lib/account");
 
 class Kiosk {
     constructor(web3, networkId) {
-        // Ganache (local) and Kovan
-        const supportedNetworkIds = ["5777", "42"];
+        // Rinkeby, Kovan, Ganache (local)
+        const supportedNetworkIds = ["4", "42", "5777"];
 
         if (supportedNetworkIds.includes(networkId.toString()) === false) {
             return null;
