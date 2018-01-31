@@ -1,101 +1,15 @@
-var DINRegistryContract = require("../contracts/build/contracts/DINRegistry.json");
+import DINRegistry from "./dinregistry";
 var Account = require("eth-lib/lib/account");
 const noAccount = "0x0000000000000000000000000000000000000000";
 
 class Kiosk {
     constructor(web3, networkId) {
         this.web3 = web3;
-
-        // Initialize contracts
-        var registryAddress =
-            DINRegistryContract["networks"]["4447"]["address"];
-        this.registry = new this.web3.eth.Contract(
-            DINRegistryContract.abi,
-            registryAddress
-        );
+        this.registry = new DINRegistry(web3, networkId);
     }
-
-    registerDIN(account) {
-        return new Promise((resolve, reject) => {
-            this.registry.methods
-                .selfRegisterDIN()
-                .send({
-                    from: account
-                })
-                .then(result => {
-                    resolve(result);
-                });
-        });
-    }
-
-    setResolver() {}
-
-    owner(DIN) {
-        return new Promise((resolve, reject) => {
-            this.registry.methods
-                .owner(DIN)
-                .call()
-                .then(result => {
-                    resolve(result);
-                })
-                .catch(err => {
-                    resolve(noAccount);
-                });
-        });
-    }
-
-    resolver(DIN) {
-        return new Promise((resolve, reject) => {
-            this.registry.methods
-                .resolver(DIN)
-                .call()
-                .then(result => {
-                    resolve(result);
-                })
-                .catch(err => {
-                    resolve(noAccount);
-                });
-        });
-    }
-
-    productURL(DIN) {
-        return this.resolver(DIN).then(resolverAddr => {
-            const resolver = new this.web3.eth.Contract(
-                ResolverContract.abi,
-                resolverAddr
-            );
-            return resolver.methods.productURL(DIN).call();
-        });
-    }
-
-    // merchant(DIN) {
-    //     return this.resolver(DIN).then(resolverAddr => {
-    //         const resolver = new this.web3.eth.Contract(
-    //             ResolverContract.abi,
-    //             resolverAddr
-    //         );
-    //         return resolver.methods.merchant(DIN).call();
-    //     });
-    // }
 
     // hash(nonce) {
     //     return this.web3.utils.sha3(nonce);
-    // }
-
-    // getETHBalance(account) {
-    //     return this.web3.eth.getBalance(account);
-    // }
-
-    // getMARKBalance(account) {
-    //     return this.marketToken.methods.balanceOf(account).call();
-    // }
-
-    // getERC20Balance(account, tokenAddress) {
-    //     const tokenContract = new this.web3.eth.Contract(
-    //         ERC20Contract.abi,
-    //         tokenAddress
-    //     );
-    //     return tokenContract.methods.balanceOf(account).call();
     // }
 
     // signPriceMessage(product, privateKey) {

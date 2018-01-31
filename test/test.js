@@ -13,6 +13,8 @@ describe("test", () => {
     let merchant;
     const merchantPrivateKey = "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3";
 
+    const resolverAddr = "0x1111111111111111111111111111111111111111";
+
     // Product
     let product;
     const DIN = 1000000001;
@@ -37,12 +39,18 @@ describe("test", () => {
         merchant = accounts[0];
         buyer = accounts[1];
 
-        await kiosk.registerDIN(merchant);
+        // Register a DIN and set the resolver
+        await kiosk.registry.registerDINWithResolver(merchant, resolverAddr);
     });
 
     it("should return the correct owner of a DIN", async () => {
-        const owner = await kiosk.owner(DIN);
+        const owner = await kiosk.registry.owner(DIN);
         expect(owner).to.equal(merchant);
+    });
+
+    it("should return the correct resolver of a DIN", async () => {
+        const resolver = await kiosk.registry.resolver(DIN);
+        expect(resolver).to.equal(resolverAddr);
     });
 
     // it("should get the product URL for a given DIN", async () => {
