@@ -1,4 +1,5 @@
 var Web3 = require("web3");
+var StandardResolverJSON = require("../contracts/build/contracts/StandardResolver.json");
 var Kiosk = require("../src/index.js");
 var assert = require("assert");
 var chai = require("chai"),
@@ -14,7 +15,7 @@ describe("test", () => {
     const merchantPrivateKey =
         "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3";
 
-    const url = "https://www.google.com/";
+    const url = "https://api.examplestore.com/products/";
 
     var resolver;
 
@@ -42,8 +43,7 @@ describe("test", () => {
         buyer = accounts[1];
         kiosk = new Kiosk(web3, "4447", merchant);
 
-        const result = await kiosk.resolver.createResolver(url);
-        resolver = result.events.NewResolver.address;
+        resolver = StandardResolverJSON["networks"]["4447"]["address"]
         // Register a DIN and set the resolver
         await kiosk.registry.registerDINWithResolver(resolver);
     });
@@ -55,12 +55,12 @@ describe("test", () => {
 
     it("should return the correct resolver of a DIN", async () => {
         const resolverAddr = await kiosk.registry.resolver(DIN);
-        expect(resolverAddr).to.equal(resolver);
+        expect(resolverAddr.toLowerCase()).to.equal(resolver);
     });
 
     it("should get the product URL for a given DIN", async () => {
         const productURL = await kiosk.registry.productURL(DIN);
-        console.log(productURL);
+        expect(productURL).to.equal(url + DIN);
     });
 
     // it("should sign a price message", async () => {
