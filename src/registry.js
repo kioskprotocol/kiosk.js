@@ -13,87 +13,45 @@ class Registry {
         );
     }
 
-    registerDIN() {
-        return new Promise((resolve, reject) => {
-            this.registry.methods
-                .registerDIN(this.account)
-                .send({
-                    from: this.account
-                })
-                .then(result => {
-                    resolve(result);
-                });
-        });
+    async registerDIN() {
+        const result = await this.registry.methods
+            .registerDIN(this.account)
+            .send({ from: this.account });
+        return result;
     }
 
-    registerDINWithResolver(resolver) {
-        return new Promise((resolve, reject) => {
-            this.registry.methods
-                .registerDINWithResolver(this.account, resolver)
-                .send({
-                    from: this.account,
-                    gas: 1000000
-                })
-                .then(result => {
-                    resolve(result);
-                });
-        });
+    async registerDINWithResolver(resolver) {
+        const result = await this.registry.methods
+            .registerDINWithResolver(this.account, resolver)
+            .send({ from: this.account, gas: 1000000 });
+        return result;
     }
 
-    setResolver(DIN, resolver) {
-        return new Promise((resolve, reject) => {
-            this.registry.methods
-                .setResolver(DIN, resolver)
-                .send({ from: this.account })
-                .then(result => {
-                    resolve(result);
-                });
-        });
+    async setResolver(DIN, resolver) {
+        const result = await this.registry.methods
+            .setResolver(DIN, resolver)
+            .send({ from: this.account });
+        return result;
     }
 
-    owner(DIN) {
-        return new Promise((resolve, reject) => {
-            this.registry.methods
-                .owner(DIN)
-                .call()
-                .then(result => {
-                    resolve(result);
-                })
-                .catch(err => {
-                    resolve(noAccount);
-                });
-        });
+    async owner(DIN) {
+        const result = await this.registry.methods.owner(DIN).call();
+        return result;
     }
 
-    resolver(DIN) {
-        return new Promise((resolve, reject) => {
-            this.registry.methods
-                .resolver(DIN)
-                .call()
-                .then(result => {
-                    resolve(result);
-                })
-                .catch(err => {
-                    resolve(noAccount);
-                });
-        });
+    async resolver(DIN) {
+        const result = await this.registry.methods.resolver(DIN).call();
+        return result;
     }
 
-    url(DIN) {
-        return new Promise((resolve, reject) => {
-            this.resolver(DIN).then(resolverAddr => {
-                var resolverContract = new this.web3.eth.Contract(
-                    StandardResolverJSON.abi,
-                    resolverAddr
-                );
-                resolverContract.methods
-                    .productURL(DIN)
-                    .call()
-                    .then(result => {
-                        resolve(result);
-                    });
-            });
-        });
+    async url(DIN) {
+        const resolverAddr = await this.resolver(DIN);
+        const resolverContract = new this.web3.eth.Contract(
+            StandardResolverJSON.abi,
+            resolverAddr
+        );
+        const result = await resolverContract.methods.productURL(DIN).call();
+        return result;
     }
 }
 
