@@ -56,7 +56,7 @@ describe("test", () => {
     });
 
     it("should get the product URL for a given DIN", async () => {
-        const productURL = await kiosk.registry.url(DIN);
+        const productURL = await kiosk.registry.productURL(DIN);
         console.log(productURL);
     });
 
