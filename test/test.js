@@ -14,6 +14,7 @@ describe("test", () => {
     const merchantPrivateKey = "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3";
 
     const resolverAddr = "0x1111111111111111111111111111111111111111";
+    const url = "https://www.google.com/";
 
     // Product
     let product;
@@ -34,13 +35,14 @@ describe("test", () => {
         web3 = new Web3(
             new Web3.providers.HttpProvider("http://localhost:9545") // Ganache
         );
-        kiosk = new Kiosk(web3, "4447");
         const accounts = await web3.eth.getAccounts();
         merchant = accounts[0];
         buyer = accounts[1];
+        kiosk = new Kiosk(web3, "4447", merchant);
 
         // Register a DIN and set the resolver
-        await kiosk.registry.registerDINWithResolver(merchant, resolverAddr);
+        await kiosk.registry.registerDINWithResolver(resolverAddr);
+        await kiosk.resolver.newResolver(url);
     });
 
     it("should return the correct owner of a DIN", async () => {
@@ -53,10 +55,10 @@ describe("test", () => {
         expect(resolver).to.equal(resolverAddr);
     });
 
-    // it("should get the product URL for a given DIN", async () => {
-    //     const url = await kiosk.productURL(DIN);
-    //     expect(url).to.equal("https://kiosk-shopify.herokuapp.com/products/");
-    // });
+    it("should get the product URL for a given DIN", async () => {
+        const productURL = await kiosk.registry.url(DIN);
+        console.log(productURL);
+    });
 
     // it("should sign a price message", async () => {
     //     signature = await kiosk.signPriceMessage(product, merchantPrivateKey);

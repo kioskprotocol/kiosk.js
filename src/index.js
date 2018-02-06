@@ -1,11 +1,11 @@
-import DINRegistry from "./dinregistry";
-var Account = require("eth-lib/lib/account");
-const noAccount = "0x0000000000000000000000000000000000000000";
+import Registry from "./registry";
+import Resolver from "./resolver";
 
 class Kiosk {
-    constructor(web3, networkId) {
+    constructor(web3, networkId, account) {
         this.web3 = web3;
-        this.registry = new DINRegistry(web3, networkId);
+        this.registry = new Registry(web3, networkId, account);
+        this.resolver = new Resolver(web3, networkId, account);
     }
 
     // hash(nonce) {
