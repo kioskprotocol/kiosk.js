@@ -2,6 +2,7 @@ var ResolverFactoryJSON = require("../contracts/build/contracts/ResolverFactory.
 
 class Resolver {
     constructor(web3, networkId, account) {
+        this.web3 = web3;
         this.account = account;
         var factoryAddress =
             ResolverFactoryJSON["networks"][networkId]["address"];
@@ -11,20 +12,12 @@ class Resolver {
         );
     }
 
-    newResolver(baseURL) {
-        return new Promise((resolve, reject) => {
-            this.factory.methods
-                .createResolver(baseURL)
-                .send({
-                    from: this.account,
-                    gas: 1000000
-                })
-                .then(result => {
-                    resolve(result);
-                });
-        });
+    async createResolver(baseURL) {
+        const result = await this.factory.methods
+            .createResolver(baseURL)
+            .send({ from: this.account, gas: 1000000 });
+        return result;
     }
-
 }
 
 module.exports = Resolver;

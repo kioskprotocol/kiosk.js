@@ -11,10 +11,12 @@ describe("test", () => {
     let kiosk; // kiosk.js
     let buyer;
     let merchant;
-    const merchantPrivateKey = "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3";
+    const merchantPrivateKey =
+        "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3";
 
-    const resolverAddr = "0x1111111111111111111111111111111111111111";
     const url = "https://www.google.com/";
+
+    var resolver;
 
     // Product
     let product;
@@ -40,9 +42,10 @@ describe("test", () => {
         buyer = accounts[1];
         kiosk = new Kiosk(web3, "4447", merchant);
 
+        const result = await kiosk.resolver.createResolver(url);
+        resolver = result.events.NewResolver.address;
         // Register a DIN and set the resolver
-        await kiosk.registry.registerDINWithResolver(resolverAddr);
-        await kiosk.resolver.newResolver(url);
+        await kiosk.registry.registerDINWithResolver(resolver);
     });
 
     it("should return the correct owner of a DIN", async () => {
@@ -51,8 +54,8 @@ describe("test", () => {
     });
 
     it("should return the correct resolver of a DIN", async () => {
-        const resolver = await kiosk.registry.resolver(DIN);
-        expect(resolver).to.equal(resolverAddr);
+        const resolverAddr = await kiosk.registry.resolver(DIN);
+        expect(resolverAddr).to.equal(resolver);
     });
 
     it("should get the product URL for a given DIN", async () => {
@@ -111,5 +114,4 @@ describe("test", () => {
     //     const index = await kiosk.getOrderIndex();
     //     expect(index).to.exist;
     // });
-
 });

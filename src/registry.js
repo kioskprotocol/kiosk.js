@@ -46,7 +46,8 @@ class Registry {
 
     async productURL(DIN) {
         const resolverAddr = await this.resolver(DIN);
-        const resolverContract = new this.web3.eth.Contract(
+        console.log(resolverAddr);
+        const resolverContract = await new this.web3.eth.Contract(
             StandardResolverJSON.abi,
             resolverAddr
         );
