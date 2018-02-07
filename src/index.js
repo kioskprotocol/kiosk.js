@@ -1,5 +1,6 @@
 import Registry from "./registry";
 import Resolver from "./resolver";
+var Account = require("eth-lib/lib/account");
 
 class Kiosk {
     constructor(web3, networkId, account) {
