@@ -1,5 +1,6 @@
 import Registry from "./registry";
 import Resolver from "./resolver";
+var Account = require("eth-lib/lib/account");
 
 class Kiosk {
     constructor(web3, networkId, account) {
@@ -12,27 +13,24 @@ class Kiosk {
     //     return this.web3.utils.sha3(nonce);
     // }
 
-    // signPriceMessage(product, privateKey) {
-    //     const hash = this.web3.utils.soliditySha3(
-    //         { type: "uint256", value: product.DIN },
-    //         { type: "uint256", value: product.price },
-    //         { type: "uint256", value: product.priceValidUntil },
-    //         { type: "address", value: product.merchant },
-    //         { type: "uint256", value: product.affiliateReward },
-    //         { type: "uint256", value: product.loyaltyReward },
-    //         { type: "address", value: product.loyaltyToken }
-    //     );
-    //     var prefix = "\x19Ethereum Signed Message:\n32";
-    //     var messageHash = this.web3.utils.soliditySha3(prefix, hash);
-    //     var signature = Account.sign(messageHash, privateKey);
-    //     var vrs = Account.decodeSignature(signature);
-    //     var v = vrs[0];
-    //     return {
-    //         v: this.web3.utils.toDecimal(v),
-    //         r: vrs[1],
-    //         s: vrs[2]
-    //     };
-    // }
+    signPriceMessage(product, privateKey) {
+        const hash = this.web3.utils.soliditySha3(
+            { type: "uint256", value: product.DIN },
+            { type: "uint256", value: product.price },
+            { type: "uint256", value: product.priceValidUntil },
+            { type: "address", value: product.merchant }
+        );
+        var prefix = "\x19Ethereum Signed Message:\n32";
+        var messageHash = this.web3.utils.soliditySha3(prefix, hash);
+        var signature = Account.sign(messageHash, privateKey);
+        var vrs = Account.decodeSignature(signature);
+        var v = vrs[0];
+        return {
+            v: this.web3.utils.toDecimal(v),
+            r: vrs[1],
+            s: vrs[2]
+        };
+    }
 
     // // This is the method to use
     // executeBuy(order, loyaltyAmount, nonceHash, signature, account) {

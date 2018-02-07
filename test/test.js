@@ -22,9 +22,6 @@ describe("test", () => {
     // Product
     let product;
     const DIN = 1000000001;
-    const quantity = 1;
-    const price = 8000000;
-    const priceValidUntil = 1514160000;
 
     // Order
     let order;
@@ -43,7 +40,8 @@ describe("test", () => {
         buyer = accounts[1];
         kiosk = new Kiosk(web3, "4447", merchant);
 
-        resolver = StandardResolverJSON["networks"]["4447"]["address"]
+        resolver = StandardResolverJSON["networks"]["4447"]["address"];
+
         // Register a DIN and set the resolver
         await kiosk.registry.registerDINWithResolver(resolver);
     });
@@ -63,10 +61,17 @@ describe("test", () => {
         expect(productURL).to.equal(url + DIN);
     });
 
-    // it("should sign a price message", async () => {
-    //     signature = await kiosk.signPriceMessage(product, merchantPrivateKey);
-    //     expect(signature).to.exist;
-    // });
+    it("should sign a price message", async () => {
+        product = {
+            DIN: 1000000001,
+            quantity: 1,
+            price: 8000000,
+            priceValidUntil: 1514160000,
+            merchant: merchant
+        };
+        signature = await kiosk.signPriceMessage(product, merchantPrivateKey);
+        expect(signature).to.exist;
+    });
 
     // it("should validate a signature", async () => {
     //     const hash = web3.utils.soliditySha3(
