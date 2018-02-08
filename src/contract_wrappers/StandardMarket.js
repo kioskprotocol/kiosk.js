@@ -1,4 +1,11 @@
-class Market {
+export default class StandardMarket {
+    
+    async isValidSignature(signer, hash, v, r, s) {
+        return await this.checkout.methods
+            .isValidSignature(signer, hash, v, r, s)
+            .call();
+    }
+
     // This is the method to use
     executeBuy(order, loyaltyAmount, nonceHash, signature, account) {
         return new Promise((resolve, reject) => {
@@ -92,5 +99,3 @@ class Market {
         });
     }
 }
-
-module.exports = Market;

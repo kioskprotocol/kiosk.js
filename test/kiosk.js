@@ -7,20 +7,17 @@ var chai = require("chai"),
     should = chai.should();
 require("dotenv").config();
 
-describe("DINRegistry", () => {
+describe("Kiosk", () => {
     let web3; // web3.js
     let kiosk; // kiosk.js
     let buyer;
     let merchant;
     const merchantPrivateKey =
         "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3";
-
     const url = "https://api.examplestore.com/products/";
-
-    var resolver;
+    let resolver;
 
     // Product
-    let product;
     const DIN = 1000000001;
     const quantity = 1;
     const price = 8000000;
@@ -42,51 +39,56 @@ describe("DINRegistry", () => {
         merchant = accounts[0];
         buyer = accounts[1];
         kiosk = new Kiosk(web3, "4447", merchant);
+        await kiosk.initialize();
 
-        resolver = StandardResolverJSON["networks"]["4447"]["address"]
+        resolver = StandardResolverJSON["networks"]["4447"]["address"];
         // Register a DIN and set the resolver
-        await kiosk.registry.registerDINWithResolver(resolver);
+        const result = await kiosk.registry.registerDINWithResolver(resolver);
     });
 
     it("should return the correct owner of a DIN", async () => {
-        const owner = await kiosk.registry.owner(DIN);
+        const owner = await kiosk.registry.getOwner(DIN);
         expect(owner).to.equal(merchant);
     });
 
     it("should return the correct resolver of a DIN", async () => {
-        const resolverAddr = await kiosk.registry.resolver(DIN);
+        const resolverAddr = await kiosk.registry.getResolver(DIN);
         expect(resolverAddr.toLowerCase()).to.equal(resolver);
     });
 
     it("should get the product URL for a given DIN", async () => {
-        const productURL = await kiosk.registry.productURL(DIN);
+        const productURL = await kiosk.registry.getProductURL(DIN);
         expect(productURL).to.equal(url + DIN);
     });
 
-    // it("should sign a price message", async () => {
-    //     signature = await kiosk.signPriceMessage(product, merchantPrivateKey);
-    //     expect(signature).to.exist;
-    // });
+    it("should sign a price message", async () => {
+        const product = {
+            DIN: DIN,
+            quantity: quantity,
+            price: price,
+            priceValidUntil: priceValidUntil,
+            merchant: merchant
+        };
+        signature = await kiosk.utils.sign(product, merchantPrivateKey);
+        expect(signature).to.exist;
+    });
 
-    // it("should validate a signature", async () => {
-    //     const hash = web3.utils.soliditySha3(
-    //         DIN,
-    //         price,
-    //         priceValidUntil,
-    //         merchant,
-    //         affiliateReward,
-    //         loyaltyReward,
-    //         loyaltyToken
-    //     );
-    //     const valid = await kiosk.isValidSignature(
-    //         merchant,
-    //         hash,
-    //         signature.v,
-    //         signature.r,
-    //         signature.s
-    //     );
-    //     expect(valid).to.equal(true);
-    // });
+    it("should validate a signature", async () => {
+        const hash = web3.utils.soliditySha3(
+            DIN,
+            price,
+            priceValidUntil,
+            merchant
+        );
+        const valid = await kiosk.utils.isValidSignature(
+            merchant,
+            hash,
+            signature.v,
+            signature.r,
+            signature.s
+        );
+        expect(valid).to.equal(true);
+    });
 
     // it("should buy a product", async () => {
     //     const nonceHash = kiosk.hash(nonce);

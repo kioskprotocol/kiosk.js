@@ -1,11 +1,11 @@
 var Account = require("eth-lib/lib/account");
 
-class Utils {
+export default class Utils {
     constructor(web3) {
         this.web3 = web3;
     }
 
-    signPriceMessage(product, privateKey) {
+    sign(product, privateKey) {
         const hash = this.web3.utils.soliditySha3(
             { type: "uint256", value: product.DIN },
             { type: "uint256", value: product.price },
@@ -27,12 +27,4 @@ class Utils {
     hash(nonce) {
         return this.web3.utils.sha3(nonce);
     }
-
-    isValidSignature(signer, hash, v, r, s) {
-        return this.checkout.methods
-            .isValidSignature(signer, hash, v, r, s)
-            .call();
-    }
 }
-
-module.exports = Utils;
