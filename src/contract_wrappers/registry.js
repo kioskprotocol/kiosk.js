@@ -1,6 +1,5 @@
-var DINRegistryJSON = require("../contracts/build/contracts/DINRegistry.json");
-var StandardResolverJSON = require("../contracts/build/contracts/StandardResolver.json");
-const noAccount = "0x0000000000000000000000000000000000000000";
+var DINRegistryJSON = require("../../contracts/build/contracts/DINRegistry.json");
+var StandardResolverJSON = require("../../contracts/build/contracts/StandardResolver.json");
 
 class Registry {
     constructor(web3, networkId, account) {

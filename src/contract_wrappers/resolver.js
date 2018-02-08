@@ -1,4 +1,4 @@
-var ResolverFactoryJSON = require("../contracts/build/contracts/ResolverFactory.json");
+var ResolverFactoryJSON = require("../../contracts/build/contracts/ResolverFactory.json");
 
 class Resolver {
     constructor(web3, networkId, account) {
