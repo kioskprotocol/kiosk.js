@@ -2,9 +2,9 @@ import DINRegistry from "./contract_wrappers/DINRegistry";
 import Utils from "./utils";
 
 class Kiosk {
-    constructor(web3, networkId, account) {
+    constructor(web3) {
         this.web3 = web3;
-        this.registry = new DINRegistry(web3, networkId, account);
+        this.registry = new DINRegistry(web3);
         this.utils = new Utils(web3);
     }
 
