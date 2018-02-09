@@ -7,7 +7,7 @@ var chai = require("chai"),
     should = chai.should();
 require("dotenv").config();
 
-describe("Registry", () => {
+describe("DINRegistry", () => {
     let web3;
     let kiosk;
     let buyer;

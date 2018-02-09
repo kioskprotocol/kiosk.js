@@ -1,5 +1,55 @@
-export default class StandardMarket {
-    
+import ContractWrapper from "./ContractWrapper";
+var StandardMarketJSON = require("../../contracts/build/contracts/StandardMarket.json");
+
+export default class StandardMarket extends ContractWrapper {
+    constructor(web3) {
+        super(web3);
+    }
+
+    async initialize() {
+        await super.initialize(StandardMarketJSON);
+    }
+
+    async buyCartItems(cartItems) {
+        const nonceHash = this.web3.utils.sha3("123");
+        let orderValuesArray = [];
+        let orderAddressesArray = [];
+        let v = [];
+        let r = [];
+        let s = [];
+        let totalPrice = 0;
+        for (let i = 0; i < cartItems.length; i++) {
+            const cartItem = cartItems[i];
+            const orderValues = [
+                cartItem.DIN,
+                cartItem.quantity,
+                cartItem.price,
+                cartItem.priceValidUntil
+            ];
+            totalPrice += cartItem.price;
+            orderValuesArray.push(orderValues);
+            const orderAddresses = [cartItem.merchant];
+            orderAddressesArray.push(orderAddresses);
+            v.push(cartItem.v);
+            r.push(cartItem.r);
+            s.push(cartItem.s);
+        }
+        return await this.contract.methods
+            .buyProducts(
+                orderValuesArray,
+                orderAddressesArray,
+                nonceHash,
+                v,
+                r,
+                s
+            )
+            .send({
+                from: this.account,
+                gas: 1000000,
+                value: totalPrice
+            });
+    }
+
     async isValidSignature(signer, hash, v, r, s) {
         return await this.checkout.methods
             .isValidSignature(signer, hash, v, r, s)
