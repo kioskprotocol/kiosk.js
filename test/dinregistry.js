@@ -23,7 +23,7 @@ describe("DINRegistry", () => {
         const accounts = await web3.eth.getAccounts();
         merchant = accounts[0];
         buyer = accounts[1];
-        kiosk = new Kiosk(web3, "4447", merchant);
+        kiosk = new Kiosk(web3);
         await kiosk.initialize();
 
         resolver = StandardResolverJSON["networks"]["4447"]["address"];

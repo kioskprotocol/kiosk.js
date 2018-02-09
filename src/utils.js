@@ -6,7 +6,9 @@ export default class Utils {
     }
 
     sign(product, privateKey) {
+        // TODO: Validate product
         const hash = this.web3.utils.soliditySha3(
+            { type: "address", value: product.market },
             { type: "uint256", value: product.DIN },
             { type: "uint256", value: product.price },
             { type: "uint256", value: product.priceValidUntil },

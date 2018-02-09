@@ -1,5 +1,5 @@
 var Web3 = require("web3");
-var StandardResolverJSON = require("../contracts/build/contracts/StandardResolver.json");
+var StandardMarketJSON = require("../contracts/build/contracts/StandardMarket.json");
 var Kiosk = require("../src/index.js");
 var assert = require("assert");
 var chai = require("chai"),
@@ -7,14 +7,17 @@ var chai = require("chai"),
     should = chai.should();
 require("dotenv").config();
 
-describe("DINRegistry", () => {
+describe("StandardMarket", () => {
     let web3;
     let kiosk;
     let buyer;
     let merchant;
     let resolver;
-    const url = "https://api.examplestore.com/products/";
+    let market;
     const DIN = 1000000001;
+    const quantity = 1;
+    const price = 100;
+    const priceValidUntil = 1577836800; // 1/1/2020
     let signature;
     let cartItem;
 
@@ -25,10 +28,10 @@ describe("DINRegistry", () => {
         const accounts = await web3.eth.getAccounts();
         merchant = accounts[0];
         buyer = accounts[1];
-        kiosk = new Kiosk(web3, "4447", merchant);
+        kiosk = new Kiosk(web3);
         await kiosk.initialize();
 
-        resolver = StandardResolverJSON["networks"]["4447"]["address"];
+        market = StandardMarketJSON["networks"]["4447"]["address"];
         // Register a DIN and set the resolver
         const result = await kiosk.registry.registerDINWithResolver(resolver);
     });
@@ -37,12 +40,16 @@ describe("DINRegistry", () => {
         // TODO: Price BigNumber
         const product = {
             DIN: DIN,
-            quantity: 1,
-            price: 100,
-            priceValidUntil: 1577836800, 
-            merchant: merchant
+            quantity: quantity,
+            price: price,
+            priceValidUntil: priceValidUntil,
+            merchant: merchant,
+            market: market
         };
-        signature = await kiosk.utils.sign(product, process.env.MERCHANT_PRIVATE_KEY);
+        signature = await kiosk.utils.sign(
+            product,
+            process.env.MERCHANT_PRIVATE_KEY
+        );
         cartItem = {
             DIN: product.DIN,
             quantity: product.quantity,
@@ -52,15 +59,31 @@ describe("DINRegistry", () => {
             v: signature.v,
             r: signature.r,
             s: signature.s
-        }
+        };
         expect(signature).to.exist;
+    });
+
+    it("should validate a signature", async () => {
+        const hash = web3.utils.soliditySha3(
+            market,
+            DIN,
+            price,
+            priceValidUntil,
+            merchant
+        );
+        const valid = await kiosk.market.isValidSignature(
+            merchant,
+            hash,
+            signature.v,
+            signature.r,
+            signature.s
+        );
+        expect(valid).to.equal(true);
     });
 
     it("should buy cart items", async () => {
         const result = await kiosk.market.buyCartItems([cartItem]);
-        console.log(result._parent.events.LogError());
     });
-
 });
 
 // Order
@@ -69,34 +92,6 @@ describe("DINRegistry", () => {
 
 // Signature
 // let signature;
-
-// it("should validate a signature", async () => {
-//     const hash = web3.utils.soliditySha3(
-//         DIN,
-//         price,
-//         priceValidUntil,
-//         merchant
-//     );
-//     const valid = await kiosk.utils.isValidSignature(
-//         merchant,
-//         hash,
-//         signature.v,
-//         signature.r,
-//         signature.s
-//     );
-//     expect(valid).to.equal(true);
-// });
-
-//     const quantity = 1;
-// const price = 8000000;
-// const priceValidUntil = 1514160000;
-
-// it("should buy a product", async () => {
-//     const nonceHash = kiosk.hash(nonce);
-//     const result = await kiosk.executeBuy(order, 0, nonceHash, signature, buyer);
-//     txHash = result.transactionHash;
-//     expect(result).to.exist;
-// })
 
 // it("should get order events", async () => {
 //     const order = await kiosk.getOrder(txHash);

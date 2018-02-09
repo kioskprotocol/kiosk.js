@@ -51,7 +51,7 @@ export default class StandardMarket extends ContractWrapper {
     }
 
     async isValidSignature(signer, hash, v, r, s) {
-        return await this.checkout.methods
+        return await this.contract.methods
             .isValidSignature(signer, hash, v, r, s)
             .call();
     }
