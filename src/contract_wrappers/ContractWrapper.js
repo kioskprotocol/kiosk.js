@@ -7,10 +7,12 @@ export default class ContractWrapper {
         const accounts = await this.web3.eth.getAccounts();
         this.account = accounts[0];
         const networkId = await this.web3.eth.net.getId();
-        var contractAddress = artifacts["networks"][networkId]["address"];
-        this.contract = new this.web3.eth.Contract(
-            artifacts.abi,
-            contractAddress
-        );
+        if (artifacts["networks"][networkId] !== undefined) {
+            var contractAddress = artifacts["networks"][networkId]["address"];
+            this.contract = new this.web3.eth.Contract(
+                artifacts.abi,
+                contractAddress
+            );
+        }
     }
 }

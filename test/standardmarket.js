@@ -84,6 +84,7 @@ describe("StandardMarket", () => {
     it("should buy cart items", async () => {
         const result = await kiosk.market.buyCartItems([cartItem]);
     });
+    
 });
 
 // Order
